@@ -1,0 +1,156 @@
+<section id="intro" class="section">
+    <h2>蓝牙核心概念</h2>
+    <p>蓝牙是一种工作在2.4GHz ISM频段的短距离无线通信协议，采用跳频扩频(FHSS)技术实现抗干扰，支持经典蓝牙(BR/EDR)和低功耗蓝牙(BLE)两种模式。</p>
+
+    <h3>技术规格详解</h3>
+    <div class="grid">
+        <div class="card">
+            <h3>📡 频段与信道</h3>
+            <p>2.4GHz ISM频段 (2400-2483.5 MHz)</p>
+            <ul>
+                <li>BLE: 40个信道 (每2MHz)</li>
+                <li>经典蓝牙: 79个信道 (每1MHz)</li>
+                <li>跳频: 1600hop/s (BLE) / 1600hop/s (经典)</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>📊 调制方式</h3>
+            <p>GFSK (高斯频移键控)</p>
+            <ul>
+                <li>BT=0.5, 调制指数=0.45-0.55</li>
+                <li>BLE 1M PHY: 1Mbps</li>
+                <li>BLE 2M PHY: 2Mbps</li>
+                <li>BLE Coded PHY: 500kbps/125kbps</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>🔋 功率等级</h3>
+            <ul>
+                <li>Class 1: 100mW (+20dBm), 100m</li>
+                <li>Class 2: 2.5mW (+4dBm), 10m</li>
+                <li>Class 3: 1mW (0dBm), 1m</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>🔒 调制差异</h3>
+            <ul>
+                <li>经典蓝牙: BR/EDR, EDR(π/4-DQPSK, 8DPSK)</li>
+                <li>BLE: 单模设备, 无法与经典蓝牙兼容</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3>双模 vs 单模</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>类型</th>
+                <th>支持模式</th>
+                <th>典型应用</th>
+                <th>芯片</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>双模 (BR/EDR+BLE)</strong></td>
+                <td>A2DP, HFP, SPP + GATT</td>
+                <td>手机、平板、PC</td>
+                <td>Qualcomm, Broadcom</td>
+            </tr>
+            <tr>
+                <td><strong>单模 (BLE Only)</strong></td>
+                <td>GATT only</td>
+                <td>IoT设备、传感器</td>
+                <td>Nordic, TI, Dialog</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>快速理解指南</h3>
+
+    <h4>📊 蓝牙版本演进图</h4>
+    <div class="timeline">
+        <div class="timeline-item">
+            <div class="timeline-marker">1999</div>
+            <div class="timeline-content">
+                <h4>蓝牙 1.0</h4>
+                <p>首次发布，1Mbps</p>
+            </div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-marker">2004</div>
+            <div class="timeline-content">
+                <h4>蓝牙 2.0 + EDR</h4>
+                <p>增强数据率 3Mbps</p>
+            </div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-marker">2009</div>
+            <div class="timeline-content">
+                <h4>蓝牙 3.0 + HS</h4>
+                <p>高速 24Mbps</p>
+            </div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-marker">2010</div>
+            <div class="timeline-content">
+                <h4>蓝牙 4.0 (BLE)</h4>
+                <p>低功耗，1Mbps</p>
+            </div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-marker">2016</div>
+            <div class="timeline-content">
+                <h4>蓝牙 5.0</h4>
+                <p>2Mbps, Long Range, Mesh</p>
+            </div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-marker">2020</div>
+            <div class="timeline-content">
+                <h4>蓝牙 5.2</h4>
+                <p>LE Audio, LC3, Isochronous</p>
+            </div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-marker">2023</div>
+            <div class="timeline-content">
+                <h4>蓝牙 5.4</h4>
+                <p>PAwR, ESL, Encrypted Advertising</p>
+            </div>
+        </div>
+    </div>
+
+    <h4>🔑 核心概念速查表</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>概念</th>
+                <th>说明</th>
+                <th>开发重点</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>BR/EDR</strong></td>
+                <td>经典蓝牙</td>
+                <td>音频、文件传输</td>
+            </tr>
+            <tr>
+                <td><strong>BLE</strong></td>
+                <td>低功耗蓝牙</td>
+                <td>IoT、可穿戴</td>
+            </tr>
+            <tr>
+                <td><strong>GFSK</strong></td>
+                <td>调制方式</td>
+                <td>射频参数</td>
+            </tr>
+            <tr>
+                <td><strong>FHSS</strong></td>
+                <td>跳频扩频</td>
+                <td>抗干扰</td>
+            </tr>
+        </tbody>
+    </table>
+</section>

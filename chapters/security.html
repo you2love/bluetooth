@@ -1,0 +1,66 @@
+<section id="security" class="section section-gray">
+    <h2>安全机制</h2>
+
+    <h3>配对流程</h3>
+    <pre><code>// BLE 配对流程 (LE Secure Connections)
+// Phase 1: 能力交换 (Capability Exchange)
+// Phase 2: 公钥交换 (Public Key Exchange)  
+// Phase 3: 认证 (Authentication)
+// Phase 4: 密钥分发 (Key Distribution)</code></pre>
+
+    <h3>安全级别</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Mode</th>
+                <th>Level</th>
+                <th>加密</th>
+                <th>认证</th>
+                <th>场景</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Mode 1</td>
+                <td>Level 1</td>
+                <td>无</td>
+                <td>无</td>
+                <td>Beacon</td>
+            </tr>
+            <tr>
+                <td>Mode 1</td>
+                <td>Level 3</td>
+                <td>加密</td>
+                <td>未认证</td>
+                <td>经典配对</td>
+            </tr>
+            <tr>
+                <td>Mode 1</td>
+                <td>Level 4</td>
+                <td>加密</td>
+                <td>MITM</td>
+                <td>安全连接</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>加密算法</h3>
+    <div class="grid">
+        <div class="card">
+            <h3>LE Legacy</h3>
+            <ul>
+                <li>加密: AES-CCM</li>
+                <li>密钥: TK</li>
+                <li>已淘汰</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>LE Secure Connections</h3>
+            <ul>
+                <li>加密: AES-CCM</li>
+                <li>密钥: P-256 ECDH</li>
+                <li>强制配对</li>
+            </ul>
+        </div>
+    </div>
+</section>

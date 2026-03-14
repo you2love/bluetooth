@@ -1,0 +1,143 @@
+<section id="le" class="section section-gray">
+    <h2>BLE开发核心</h2>
+
+    <h3>GAP角色与模式</h3>
+    <div class="grid">
+        <div class="card">
+            <h3>Peripheral (周边)</h3>
+            <p>广播设备，被中心扫描连接</p>
+            <ul>
+                <li>典型: 传感器、手环</li>
+                <li>功耗: 广播 > 待机</li>
+                <li>单连接</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Central (中心)</h3>
+            <p>扫描并连接周边设备</p>
+            <ul>
+                <li>典型: 手机、PC</li>
+                <li>多连接支持</li>
+                <li>发起LL连接请求</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Observer (观察者)</h3>
+            <p>仅扫描，不连接</p>
+            <ul>
+                <li>典型: 蓝牙定位器</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Broadcaster (广播者)</h3>
+            <p>仅广播，不连接</p>
+            <ul>
+                <li>典型: Beacon</li>
+                <li>iBeacon/Eddystone</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3>📊 广播类型与参数</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>类型</th>
+                <th>PDU</th>
+                <th>用途</th>
+                <th>响应</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>ADV_IND</td>
+                <td>可连接非定向</td>
+                <td>一般广播</td>
+                <td>SCAN_REQ / CONNECT_IND</td>
+            </tr>
+            <tr>
+                <td>ADV_DIRECT_IND</td>
+                <td>可连接定向</td>
+                <td>快速重连</td>
+                <td>CONNECT_IND</td>
+            </tr>
+            <tr>
+                <td>ADV_SCAN_IND</td>
+                <td>可扫描非定向</td>
+                <td>获取设备名称</td>
+                <td>SCAN_RSP</td>
+            </tr>
+            <tr>
+                <td>ADV_NONCONN_IND</td>
+                <td>不可连接非定向</td>
+                <td>Beacon</td>
+                <td>无</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>📊 连接参数速查</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>场景</th>
+                <th>interval</th>
+                <th>latency</th>
+                <th>timeout</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>低延迟(游戏)</td>
+                <td>7.5ms</td>
+                <td>0</td>
+                <td>500ms</td>
+            </tr>
+            <tr>
+                <td>平衡(键鼠)</td>
+                <td>30-50ms</td>
+                <td>0-4</td>
+                <td>2s</td>
+            </tr>
+            <tr>
+                <td>低功耗(传感器)</td>
+                <td>1-4s</td>
+                <td>50-99</td>
+                <td>10s</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>📊 ATT操作码</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Opcode</th>
+                <th>名称</th>
+                <th>方向</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>0x03</td>
+                <td>Read By Type Request</td>
+                <td>C→P</td>
+            </tr>
+            <tr>
+                <td>0x0B</td>
+                <td>Write Request</td>
+                <td>C→P</td>
+            </tr>
+            <tr>
+                <td>0x1B</td>
+                <td>Handle Value Notification</td>
+                <td>P→C</td>
+            </tr>
+            <tr>
+                <td>0x1D</td>
+                <td>Handle Value Indication</td>
+                <td>P→C</td>
+            </tr>
+        </tbody>
+    </table>
+</section>

@@ -1,0 +1,90 @@
+<section id="comparison" class="section">
+    <h2>技术对比与选型</h2>
+
+    <h3>蓝牙 vs 其他协议</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>协议</th>
+                <th>频段</th>
+                <th>速率</th>
+                <th>功耗</th>
+                <th>范围</th>
+                <th>典型应用</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>BLE</strong></td>
+                <td>2.4GHz</td>
+                <td>1-2Mbps</td>
+                <td>极低</td>
+                <td>10-100m</td>
+                <td>IoT、可穿戴</td>
+            </tr>
+            <tr>
+                <td><strong>经典蓝牙</strong></td>
+                <td>2.4GHz</td>
+                <td>1-3Mbps</td>
+                <td>中</td>
+                <td>10-100m</td>
+                <td>音频、文件</td>
+            </tr>
+            <tr>
+                <td><strong>WiFi</strong></td>
+                <td>2.4/5GHz</td>
+                <td>100+Mbps</td>
+                <td>高</td>
+                <td>10-50m</td>
+                <td>上网、视频</td>
+            </tr>
+            <tr>
+                <td><strong>Zigbee</strong></td>
+                <td>2.4GHz</td>
+                <td>250kbps</td>
+                <td>低</td>
+                <td>10-100m</td>
+                <td>智能家居</td>
+            </tr>
+            <tr>
+                <td><strong>LoRa</strong></td>
+                <td>433MHz-868MHz</td>
+                <td>0.3-50kbps</td>
+                <td>极低</td>
+                <td>2-15km</td>
+                <td>远距传感</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>协议选型指南</h3>
+    <div class="grid">
+        <div class="card">
+            <h3>选BLE</h3>
+            <ul>
+                <li>电池供电设备</li>
+                <li>简单数据传输</li>
+                <li>IoT传感器</li>
+                <li>手机配对</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>选经典蓝牙</h3>
+            <ul>
+                <li>音频传输(A2DP)</li>
+                <li>大文件传输</li>
+                <li>串口透传(SPP)</li>
+                <li>兼容老设备</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>选WiFi</h3>
+            <ul>
+                <li>高速数据传输</li>
+                <li>视频流</li>
+                <li>互联网接入</li>
+                <li>有电源设备</li>
+            </ul>
+        </div>
+    </div>
+</section>

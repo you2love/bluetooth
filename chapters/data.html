@@ -1,0 +1,126 @@
+<section id="data" class="section section-gray">
+    <h2>GATT数据传输</h2>
+
+    <h3>数据传输模式</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>模式</th>
+                <th>ATT Opcode</th>
+                <th>确认</th>
+                <th>适用场景</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Read</strong></td>
+                <td>0x0A/0x0B</td>
+                <td>需要</td>
+                <td>配置读取、状态查询</td>
+            </tr>
+            <tr>
+                <td><strong>Write</strong></td>
+                <td>0x12/0x13</td>
+                <td>需要</td>
+                <td>控制指令、写入确认</td>
+            </tr>
+            <tr>
+                <td><strong>Write Without Response</strong></td>
+                <td>0x52</td>
+                <td>不需要</td>
+                <td>大数据流、按键事件</td>
+            </tr>
+            <tr>
+                <td><strong>Notify</strong></td>
+                <td>0x1B</td>
+                <td>不需要</td>
+                <td>传感器数据、心率</td>
+            </tr>
+            <tr>
+                <td><strong>Indicate</strong></td>
+                <td>0x1D</td>
+                <td>需要</td>
+                <td>重要告警、OTA升级</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>📊 MTU协商</h3>
+    <pre><code>// MTU: 默认23 bytes, BLE 5.0最大512 bytes
+// 性能对比:
+// MTU=23: 每次传输20字节
+// MTU=512: 每次传输509字节 (提升25倍)</code></pre>
+
+    <h3>📊 常用UUID</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>服务/特征</th>
+                <th>UUID</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>电池服务</td>
+                <td>180f</td>
+            </tr>
+            <tr>
+                <td>电池电量</td>
+                <td>2a19</td>
+            </tr>
+            <tr>
+                <td>心率服务</td>
+                <td>180d</td>
+            </tr>
+            <tr>
+                <td>心率测量</td>
+                <td>2a37</td>
+            </tr>
+            <tr>
+                <td>设备信息</td>
+                <td>180a</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>跨平台代码示例</h3>
+    <div class="tab-container">
+        <div class="tab-buttons">
+            <button class="tab-btn active" data-tab="python">Python</button>
+            <button class="tab-btn" data-tab="golang">GoLang</button>
+            <button class="tab-btn" data-tab="miniprogram">微信小程序</button>
+        </div>
+
+        <div class="tab-content active" id="python">
+            <pre><code># Python - bleak库
+import asyncio
+from bleak import BleakClient
+
+async def ble_demo():
+    client = BleakClient("AA:BB:CC:DD:EE:FF")
+    await client.connect()
+    # 读取
+    data = await client.read_gatt_char("2a19")
+    # 通知
+    await client.start_notify("2a37", callback)
+    await asyncio.sleep(10)</code></pre>
+        </div>
+
+        <div class="tab-content" id="golang">
+            <pre><code>// Go - go-ble库
+import "github.com/go-ble/ble"
+
+cln, err := ble.Connect(ctx, addr)
+chars, _ := cln.DiscoverCharacteristics(nil, svc)
+cln.Read(chars[0])</code></pre>
+        </div>
+
+        <div class="tab-content" id="miniprogram">
+            <pre><code>// 微信小程序
+wx.createBLEConnection({ deviceId })
+wx.getBLEDeviceServices({ deviceId })
+wx.notifyBLECharacteristicValueChange({ ... })
+wx.onBLECharacteristicValueChange(cb)</code></pre>
+        </div>
+    </div>
+</section>

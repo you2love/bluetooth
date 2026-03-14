@@ -1,0 +1,72 @@
+<section id="troubleshooting" class="section section-gray">
+    <h2>开发排错指南</h2>
+
+    <h3>常见问题与解决方案</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>问题</th>
+                <th>可能原因</th>
+                <th>解决方案</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>设备无法被发现</td>
+                <td>未开启广播/距离过远</td>
+                <td>检查广播参数/缩短距离</td>
+            </tr>
+            <tr>
+                <td>连接经常断开</td>
+                <td>参数不当/信号弱</td>
+                <td>调整interval/latency</td>
+            </tr>
+            <tr>
+                <td>数据发送失败</td>
+                <td>MTU不匹配/特征值属性</td>
+                <td>协商MTU/检查属性</td>
+            </tr>
+            <tr>
+                <td>配对失败</td>
+                <td>IO能力不匹配</td>
+                <td>检查配对参数</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>调试工具</h3>
+    <div class="grid">
+        <div class="card">
+            <h3>Android</h3>
+            <ul>
+                <li>nRF Connect</li>
+                <li>BLE Scanner</li>
+                <li>HCI Log</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>iOS</h3>
+            <ul>
+                <li>LightBlue</li>
+                <li>BlueCarbon</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>PC</h3>
+            <ul>
+                <li>nRF Connect Desktop</li>
+                <li>Wireshark (BTVS)</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3>调试日志示例</h3>
+    <pre><code>// BLE 连接日志分析
+[D] GAP: Start advertising
+[D] GAP: Connected (handle=0)
+[D] GATT: MTU exchanged (517)
+[D] GATT: Service discovered
+[D] ATT: Write Request (handle=0x0003)
+[D] ATT: Write Response
+[D] GAP: Connection parameters updated</code></pre>
+</section>

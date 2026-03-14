@@ -1,0 +1,158 @@
+<section id="protocol-stack" class="section section-gray">
+    <h2>蓝牙协议栈</h2>
+
+    <h3>分层架构图</h3>
+    <div class="layer-diagram">
+        <div class="layer-stack">
+            <div class="layer layer-app">
+                应用层 Profiles (GAP, GATT, ANP, HRP等)
+                <span class="layer-size">业务逻辑</span>
+            </div>
+            <div class="layer layer-deps">
+                主机层 Host
+                <span class="layer-size">L2CAP, ATT, SMP, GATT, GAP</span>
+            </div>
+            <div class="layer layer-runtime">
+                主机控制器接口 HCI
+                <span class="layer-size">UART/SPI/USB</span>
+            </div>
+            <div class="layer layer-os">
+                控制器 Controller
+                <span class="layer-size">Link Layer + PHY</span>
+            </div>
+        </div>
+    </div>
+
+    <h3>核心层详解</h3>
+    <div class="grid">
+        <div class="card">
+            <h3>PHY (Physical Layer)</h3>
+            <ul>
+                <li>RF射频收发</li>
+                <li>GFSK调制解调</li>
+                <li>发射接收切换</li>
+                <li>Channel Index → RF频率</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Link Layer</h3>
+            <ul>
+                <li>状态机: Standby/Adv/Scann/Initiator/Connected</li>
+                <li>广播/扫描/连接</li>
+                <li>数据加解密</li>
+                <li>CRC校验</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>HCI (Host Controller Interface)</h3>
+            <ul>
+                <li>Command/Event/ACL/SCO</li>
+                <li>Flow Control</li>
+                <li>Buffer Management</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>L2CAP</h3>
+            <ul>
+                <li>Channel ID (CID) 复用</li>
+                <li>Segmentation/Reassembly</li>
+                <li>Flow Control</li>
+                <li>LE Credit Based Flow</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3>HCI指令类型</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>类型</th>
+                <th>OGF</th>
+                <th>示例</th>
+                <th>说明</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Link Control</td>
+                <td>0x01</td>
+                <td>HCI_Inquiry</td>
+                <td>扫描设备</td>
+            </tr>
+            <tr>
+                <td>Link Policy</td>
+                <td>0x02</td>
+                <td>HCI_Accept_Connection</td>
+                <td>连接管理</td>
+            </tr>
+            <tr>
+                <td>Host Controller</td>
+                <td>0x03</td>
+                <td>HCI_Set_Event_Mask</td>
+                <td>控制器配置</td>
+            </tr>
+            <tr>
+                <td>Information</td>
+                <td>0x04</td>
+                <td>HCI_Read_Local_Version</td>
+                <td>版本信息</td>
+            </tr>
+            <tr>
+                <td>LE Controller</td>
+                <td>0x08</td>
+                <td>HCI_LE_Create_Connection</td>
+                <td>BLE操作</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>📊 协议交互时序图</h3>
+    <pre><code>// BLE 连接建立时序
+设备A(广播)                 设备B(扫描)
+    |                           |
+    |--- ADV_IND (广播) -------->|
+    |                           |
+    |<-- SCAN_REQ (扫描请求) ---|
+    |--- SCAN_RSP (扫描响应) -->|
+    |                           |
+    |<-- CONNECT_IND (连接请求)-|
+    |                           |
+    |========= 连接建立 ========>|
+    |                           |
+    |--- 数据交换 (L2CAP) ------>|
+    |<-- 数据交换 (L2CAP) ------|
+    |                           |</code></pre>
+
+    <h3>📋 各层数据格式</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>层</th>
+                <th>PDU</th>
+                <th>最大负载</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>PHY</td>
+                <td>Physical Channel PDU</td>
+                <td>37 bytes</td>
+            </tr>
+            <tr>
+                <td>LL</td>
+                <td>LL Data / LL Control</td>
+                <td>27 bytes</td>
+            </tr>
+            <tr>
+                <td>L2CAP</td>
+                <td>BLE L2CAP</td>
+                <td>65535 bytes</td>
+            </tr>
+            <tr>
+                <td>ATT</td>
+                <td>ATT PDU</td>
+                <td>MTU-3 bytes</td>
+            </tr>
+        </tbody>
+    </table>
+</section>
