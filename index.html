@@ -30,6 +30,21 @@
         .data-label { width: 120px; font-weight: bold; font-size: 13px; }
         .data-box { flex: 1; background: #e9ecef; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto; }
         .data-arrow { width: 120px; text-align: center; color: #6c757d; font-size: 12px; }
+
+        /* 时序图样式 */
+        .seq-full { background: var(--pre-bg); border-radius: 8px; padding: 20px; margin: 20px 0; overflow-x: auto; }
+        .seq-row { display: flex; align-items: center; min-height: 45px; }
+        .seq-actor-col { width: 140px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; }
+        .seq-actor-name { font-weight: bold; font-size: 13px; padding: 8px 0; }
+        .seq-line-col { width: 2px; background: #6c757d; opacity: 0.3; flex: 1; min-height: 40px; }
+        .seq-content { flex: 1; display: flex; align-items: center; min-height: 40px; padding: 0 15px; }
+        .seq-content-left { justify-content: flex-end; text-align: right; padding-right: 20px; }
+        .seq-content-right { justify-content: flex-start; text-align: left; padding-left: 20px; }
+        .seq-msg { max-width: 200px; padding: 6px 12px; border-radius: 6px; font-size: 12px; }
+        .seq-msg-req { background: #007bff; color: white; }
+        .seq-msg-rsp { background: #28a745; color: white; }
+        .seq-msg-data { background: #6c757d; color: white; }
+        .seq-arrow-col { width: 30px; display: flex; justify-content: center; color: #6c757d; font-size: 16px; }
     </style>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
 </head>
@@ -617,6 +632,136 @@ class BLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
             <h3>📁 案例1: 蓝牙传输文件 (OBEX/FTP)</h3>
             <p>经典蓝牙使用OBEX协议传输文件，BLE使用自定义GATT服务。</p>
 
+            <!-- 经典蓝牙OBEX文件传输时序图 -->
+            <h4>📈 经典蓝牙OBEX文件传输时序图</h4>
+            <div class="seq-full">
+                <div class="seq-row">
+                    <div class="seq-actor-col"><div class="seq-actor-name">手机/PC</div></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col"></div>
+                    <div class="seq-actor-col"><div class="seq-actor-name">目标设备</div></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">RFCOMM Connect (SPP)</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">RFCOMM Connect OK</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">OBEX: CONNECT</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">OBEX: SUCCESS</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">OBEX: PUT (Header: Name, Length)</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-data">写入文件数据...</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">OBEX: SUCCESS</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">OBEX: DISCONNECT</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-data">RFCOMM Close</span></div>
+                </div>
+            </div>
+
+            <!-- BLE文件传输时序图 -->
+            <h4>📈 BLE文件传输时序图</h4>
+            <div class="seq-full">
+                <div class="seq-row">
+                    <div class="seq-actor-col"><div class="seq-actor-name">手机App</div></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col"></div>
+                    <div class="seq-actor-col"><div class="seq-actor-name">BLE设备</div></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">CONNECT</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Connection Complete</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">Write: CMD_START + 文件大小</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Write Response</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">Write NoResp: DATA_PACKET_1</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">Write NoResp: DATA_PACKET_2</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">Write NoResp: DATA_PACKET_N</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">Write: CMD_END</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Notify: 传输完成确认</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+            </div>
+
             <h4>经典蓝牙 - OBEX文件传输</h4>
             <pre><code>// Android 经典蓝牙文件传输
 import android.bluetooth.BluetoothDevice;
@@ -707,6 +852,130 @@ private void sendFileByBLE(byte[] fileData) {
             <h3>🎵 案例2: 蓝牙音频 (A2DP/HFP)</h3>
             <p>经典蓝牙用于音频传输，支持高音质音频播放和通话。</p>
 
+            <!-- A2DP音频播放时序图 -->
+            <h4>📈 A2DP音频流时序图</h4>
+            <div class="seq-full">
+                <div class="seq-row">
+                    <div class="seq-actor-col"><div class="seq-actor-name">手机</div></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col"></div>
+                    <div class="seq-actor-col"><div class="seq-actor-name">蓝牙耳机</div></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">A2DP: Connect</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">A2DP: Accept</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">AVDTP: Open (建立流)</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">AVDTP: Open Ack</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">AVDTP: Start</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">AVDTP: Start Ack</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-data">A2DP Audio Stream (音乐数据)</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-data">A2DP Audio Stream...</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">AVDTP: Suspend (暂停)</span></div>
+                </div>
+            </div>
+
+            <!-- HFP免提通话时序图 -->
+            <h4>📈 HFP免提通话时序图</h4>
+            <div class="seq-full">
+                <div class="seq-row">
+                    <div class="seq-actor-col"><div class="seq-actor-name">手机</div></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col"></div>
+                    <div class="seq-actor-col"><div class="seq-actor-name">车载/耳机</div></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">AT+CHUP (挂断)</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">OK</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">AT+CLCC (查询通话)</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">+CLCC: 1,0,0,0,0</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">AT+CMGS=13800138000 (发送短信)</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">> (等待短信内容)</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-data">短信内容</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">+CMGS: 1 (发送成功)</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+            </div>
+
             <h4>Audio Streaming (A2DP)</h4>
             <pre><code>// Android A2DP 音频播放
 import android.bluetooth.A2dpSinkProfile;
@@ -789,6 +1058,94 @@ public class HandsFree {
             <h3>⌨️ 案例3: 蓝牙键鼠 (HID)</h3>
             <p>HID (Human Interface Device) 配置文件用于键盘、鼠标、游戏手柄等。</p>
 
+            <!-- BLE HID键盘时序图 -->
+            <h4>📈 BLE HID键盘按键时序图</h4>
+            <div class="seq-full">
+                <div class="seq-row">
+                    <div class="seq-actor-col"><div class="seq-actor-name">键盘</div></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col"></div>
+                    <div class="seq-actor-col"><div class="seq-actor-name">手机/PC</div></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">CONNECT (BLE)</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Connection Complete</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">Read: HID Report Map</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Report Descriptor</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">Write: Protocol Mode (Report)</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">OK</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-data">Report: Key Pressed (0x04='A')</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-data">Report: Key Released (0x00)</span></div>
+                </div>
+            </div>
+
+            <!-- BLE HID鼠标时序图 -->
+            <h4>📈 BLE HID鼠标移动时序图</h4>
+            <div class="seq-full">
+                <div class="seq-row">
+                    <div class="seq-actor-col"><div class="seq-actor-name">鼠标</div></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col"></div>
+                    <div class="seq-actor-col"><div class="seq-actor-name">手机/PC</div></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-data">Report: [Buttons=0, X=10, Y=5, Wheel=0]</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-data">Report: [Buttons=1, X=0, Y=0, Wheel=0] (左键按下)</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-data">Report: [Buttons=0, X=0, Y=0, Wheel=1] (滚轮)</span></div>
+                </div>
+            </div>
+
             <h4>作为HID设备 (BLE)</h4>
             <pre><code>// Nordic nRF52 HID服务
 // HID Service UUID: 0x1812
@@ -844,6 +1201,67 @@ void send_key(uint8_t key) {
 }</code></pre>
 
             <h3>📱 案例4: 微信小程序蓝牙控制智能设备</h3>
+            <p>微信小程序控制智能灯的完整交互流程。</p>
+
+            <!-- 微信小程序控制智能灯时序图 -->
+            <h4>📈 微信小程序控制智能灯时序图</h4>
+            <div class="seq-full">
+                <div class="seq-row">
+                    <div class="seq-actor-col"><div class="seq-actor-name">小程序</div></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col"></div>
+                    <div class="seq-actor-col"><div class="seq-actor-name">智能灯</div></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">openBluetoothAdapter</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">success</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">startBluetoothDevicesDiscovery</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">onBluetoothDeviceFound</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">createBLEConnection</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">success</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">writeBLECharacteristicValue: 0x01</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">onBLECharacteristicValueChange: 确认</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+            </div>
+
             <pre><code>// 微信小程序 - 控制智能灯
 Page({
     data: {
@@ -948,7 +1366,84 @@ Page({
 })</code></pre>
 
             <h3>🔋 案例5: 电池电量监测</h3>
-            <pre><code>// 读取标准电池服务
+            <p>读取标准电池服务 (Battery Service) 的电量数据。</p>
+
+            <!-- 电池电量监测时序图 -->
+            <h4>📈 电池电量读取时序图</h4>
+            <div class="seq-full">
+                <div class="seq-row">
+                    <div class="seq-actor-col"><div class="seq-actor-name">手机App</div></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col"></div>
+                    <div class="seq-actor-col"><div class="seq-actor-name">BLE设备</div></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">CONNECT</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Connected</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">Discover Services</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Service: 180F (Battery)</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">Discover Characteristics</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Char: 2A19 (Battery Level)</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">Read: 2A19</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Value: 0x64 (100%)</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">Write: 2902=0x0001 (启用通知)</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Write Response</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-data">Notify: 0x5A (90%)</span></div>
+                </div>
+            </div>
 // Service: 0x180F
 // Characteristic: 0x2A19 (Battery Level)
 
@@ -978,7 +1473,78 @@ public void onCharacteristicChanged(BluetoothGatt gatt,
 }</code></pre>
 
             <h3>🌡️ 案例6: 体温计数据读取</h3>
-            <pre><code>// Health Thermometer Service
+            <p>使用Health Thermometer服务读取体温数据。</p>
+
+            <!-- 体温计数据读取时序图 -->
+            <h4>📈 体温计数据读取时序图</h4>
+            <div class="seq-full">
+                <div class="seq-row">
+                    <div class="seq-actor-col"><div class="seq-actor-name">手机App</div></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col"></div>
+                    <div class="seq-actor-col"><div class="seq-actor-name">体温计设备</div></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">CONNECT</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Connected</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">Discover Services</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Service: 1809 (Health Thermometer)</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">Discover Characteristics</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Char: 2A1C (Temp Measurement)</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-req">Write: 2902=0x0002 (启用Indicate)</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Write Response</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-line-col"></div>
+                    <div class="seq-arrow-col">→</div>
+                    <div class="seq-content seq-content-right"><span class="seq-msg seq-msg-data">Indicate: [Flags=0, Temp=36.5°C]</span></div>
+                </div>
+                <div class="seq-row">
+                    <div class="seq-actor-col"></div>
+                    <div class="seq-content seq-content-left"><span class="seq-msg seq-msg-rsp">Confirmation (确认收到)</span></div>
+                    <div class="seq-arrow-col">←</div>
+                    <div class="seq-actor-col"></div>
+                </div>
+            </div>
 // Service: 0x1809
 // Characteristic: 0x2A1E (Temperature Measurement)
 
