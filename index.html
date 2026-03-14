@@ -94,175 +94,422 @@
 
         <!-- 上层应用 -->
         <section id="app-layer" class="section">
-            <h2>上层应用如何使用蓝牙</h2>
-            <p>应用层通过GATT(通用属性配置文件)与蓝牙协议栈交互，实现设备间的数据通信。</p>
+            <h2>App与蓝牙设备通讯实战</h2>
+            <p>本节以一个具体案例详细介绍App如何与BLE设备进行完整通讯。</p>
 
-            <h3>📐 应用调用流程</h3>
+            <h3>📐 完整通讯流程</h3>
             <div class="flow-row">
-                <div class="flow-box flow-start">App调用</div>
+                <div class="flow-box flow-start">1.扫描</div>
                 <div class="flow-box">→</div>
-                <div class="flow-box flow-process">Platform API</div>
+                <div class="flow-box flow-process">2.连接</div>
                 <div class="flow-box">→</div>
-                <div class="flow-box flow-process">GATT Client</div>
+                <div class="flow-box flow-process">3.发现服务</div>
                 <div class="flow-box">→</div>
-                <div class="flow-box flow-process">ATT Protocol</div>
+                <div class="flow-box flow-process">4.发现特征值</div>
                 <div class="flow-box">→</div>
-                <div class="flow-box flow-process">L2CAP</div>
-                <div class="flow-box">→</div>
-                <div class="flow-box flow-end">PHY</div>
+                <div class="flow-box flow-process">5.交互数据</div>
             </div>
 
-            <h3>📈 App读取心率数据序列图</h3>
+            <h3>📈 完整通讯序列图</h3>
             <div class="sequence-diagram">
                 <div class="seq-actors">
                     <div class="seq-actor">手机App</div>
-                    <div class="seq-actor">心率带</div>
+                    <div class="seq-actor">BLE设备</div>
                 </div>
+                <!-- 扫描阶段 -->
                 <div class="seq-message">
-                    <div class="seq-msg-left">连接设备</div>
+                    <div class="seq-msg-left">SCAN_START</div>
                     <div class="seq-msg-center"><div class="seq-arrow"></div></div>
-                    <div class="seq-msg-right">CONNECT</div>
-                </div>
-                <div class="seq-message">
-                    <div class="seq-msg-left">发现服务</div>
-                    <div class="seq-msg-center"><div class="seq-arrow"></div></div>
-                    <div class="seq-msg-right">Service</div>
-                </div>
-                <div class="seq-message">
-                    <div class="seq-msg-left">发现特征值</div>
-                    <div class="seq-msg-center"><div class="seq-arrow"></div></div>
-                    <div class="seq-msg-right">Char</div>
-                </div>
-                <div class="seq-message">
-                    <div class="seq-msg-left">订阅通知</div>
-                    <div class="seq-msg-center"><div class="seq-arrow"></div></div>
-                    <div class="seq-msg-right">CCC</div>
+                    <div class="seq-msg-right"></div>
                 </div>
                 <div class="seq-message">
                     <div class="seq-msg-left"></div>
                     <div class="seq-msg-center"><div class="seq-arrow"></div></div>
-                    <div class="seq-msg-right">心跳数据</div>
+                    <div class="seq-msg-right">ADV_IND (名称:MY-DEV)</div>
                 </div>
+                <!-- 连接阶段 -->
                 <div class="seq-message">
-                    <div class="seq-msg-left">心率: 72</div>
-                    <div class="seq-msg-center"><div class="seq-arrow"></div></div>
-                    <div class="seq-msg-right">显示</div>
-                </div>
-            </div>
-
-            <h3>📈 App发送数据控制LED序列图</h3>
-            <div class="sequence-diagram">
-                <div class="seq-actors">
-                    <div class="seq-actor">手机App</div>
-                    <div class="seq-actor">LED设备</div>
-                </div>
-                <div class="seq-message">
-                    <div class="seq-msg-left">Write Request</div>
+                    <div class="seq-msg-left">CONNECT</div>
                     <div class="seq-msg-center"><div class="seq-arrow seq-arrow-right"></div></div>
                     <div class="seq-msg-right"></div>
                 </div>
                 <div class="seq-message">
                     <div class="seq-msg-left"></div>
                     <div class="seq-msg-center"><div class="seq-arrow seq-arrow-right"></div></div>
-                    <div class="seq-msg-right">写数据</div>
+                    <div class="seq-msg-right">CONN_COMPLETE</div>
+                </div>
+                <!-- 发现服务 -->
+                <div class="seq-message">
+                    <div class="seq-msg-left">DISCOVER_SERVICES</div>
+                    <div class="seq-msg-center"><div class="seq-arrow"></div></div>
+                    <div class="seq-msg-right"></div>
                 </div>
                 <div class="seq-message">
                     <div class="seq-msg-left"></div>
-                    <div class="seq-msg-center"><div class="seq-arrow seq-arrow-right"></div></div>
-                    <div class="seq-msg-right">Write Response</div>
+                    <div class="seq-msg-center"><div class="seq-arrow"></div></div>
+                    <div class="seq-msg-right">SERVICE:180F (电池)</div>
                 </div>
                 <div class="seq-message">
-                    <div class="seq-msg-left">写入成功</div>
+                    <div class="seq-msg-left"></div>
+                    <div class="seq-msg-center"><div class="seq-arrow"></div></div>
+                    <div class="seq-msg-right">SERVICE:180A (设备信息)</div>
+                </div>
+                <!-- 发现特征值 -->
+                <div class="seq-message">
+                    <div class="seq-msg-left">DISCOVER_CHARS</div>
+                    <div class="seq-msg-center"><div class="seq-arrow"></div></div>
+                    <div class="seq-msg-right"></div>
+                </div>
+                <div class="seq-message">
+                    <div class="seq-msg-left"></div>
+                    <div class="seq-msg-center"><div class="seq-arrow"></div></div>
+                    <div class="seq-msg-right">CHAR:2A19 (电量)</div>
+                </div>
+                <!-- 读取数据 -->
+                <div class="seq-message">
+                    <div class="seq-msg-left">READ:2A19</div>
                     <div class="seq-msg-center"><div class="seq-arrow seq-arrow-right"></div></div>
+                    <div class="seq-msg-right"></div>
+                </div>
+                <div class="seq-message">
+                    <div class="seq-msg-left"></div>
+                    <div class="seq-msg-center"><div class="seq-arrow"></div></div>
+                    <div class="seq-msg-right">VALUE:0x64 (100%)</div>
+                </div>
+                <!-- 订阅通知 -->
+                <div class="seq-message">
+                    <div class="seq-msg-left">WRITE:2902 (启用)</div>
+                    <div class="seq-msg-center"><div class="seq-arrow seq-arrow-right"></div></div>
+                    <div class="seq-msg-right"></div>
+                </div>
+                <div class="seq-message">
+                    <div class="seq-msg-left"></div>
+                    <div class="seq-msg-center"><div class="seq-arrow"></div></div>
+                    <div class="seq-msg-right">NOTIFY:0x64</div>
+                </div>
+                <!-- 断开 -->
+                <div class="seq-message">
+                    <div class="seq-msg-left">DISCONNECT</div>
+                    <div class="seq-msg-center"><div class="seq-arrow"></div></div>
                     <div class="seq-msg-right"></div>
                 </div>
             </div>
 
-            <h3>📋 数据在各层的封装</h3>
-            <div class="data-flow">
-                <div class="data-layer">
-                    <div class="data-label">应用层</div>
-                    <div class="data-box">{"heart_rate": 72, "timestamp": 123456}</div>
-                </div>
-                <div class="data-arrow">↓ 封装</div>
-                <div class="data-layer">
-                    <div class="data-label">ATT层</div>
-                    <div class="data-box">0x1B (Notify) + Handle + [72]</div>
-                </div>
-                <div class="data-arrow">↓ 封装</div>
-                <div class="data-layer">
-                    <div class="data-label">L2CAP层</div>
-                    <div class="data-box">CID: 0x0004 + Length + [ATT PDU]</div>
-                </div>
-                <div class="data-arrow">↓ 封装</div>
-                <div class="data-layer">
-                    <div class="data-label">Link Layer</div>
-                    <div class="data-box">LL Data PDU: 0x0B + Length + [L2CAP]</div>
-                </div>
-                <div class="data-arrow">↓ 封装</div>
-                <div class="data-layer">
-                    <div class="data-label">PHY层</div>
-                    <div class="data-box">Preamble + Access Address + [LL PDU] + CRC</div>
-                </div>
-            </div>
+            <h3>📋 实际通讯数据解析</h3>
+            <h4>1. 广播数据包 (ADV_IND)</h4>
+            <pre><code>// 原始数据: 02 01 06 05 FF 01 02 03 04 05
+02 01 06        //  Flags: LE_GENERAL_DISC_MODE
+05 FF           //  制造商数据: 0xFF01 (自定义)
+// 设备名称在 SCAN_RSP 中
+// 02 09 4D 59 2D 44 45 56  // "MY-DEV"</code></pre>
 
-            <h3>📋 常见应用场景示例</h3>
+            <h4>2. 连接请求 (CONNECT_IND)</h4>
+            <pre><code>// 发起端发送连接参数
+connInterval: 36 (45ms)
+slaveLatency: 0
+supervisionTimeout: 500
+peerAddressType: 0 (public)
+peerAddress: AA:BB:CC:DD:EE:FF</code></pre>
+
+            <h4>3. 发现服务 Response</h4>
+            <pre><code>// ATT Read By Group Type Response
+Handle: 0x0001 - 0x000F  // 服务范围
+UUID:   180F              // 电池服务
+
+Handle: 0x0010 - 0x0018
+UUID:   180A              // 设备信息服务</code></pre>
+
+            <h4>4. 读取电池电量</h4>
+            <pre><code>// Request: Read Request
+Opcode:  0x0A
+Handle:  0x0003
+
+// Response: Read Response  
+Opcode:  0x0B
+Value:   0x64 (100%)</code></pre>
+
+            <h4>5. 订阅通知</h4>
+            <pre><code>// Write Request: 写入CCC描述符
+Opcode:  0x12
+Handle:  0x0004 (CCC描述符)
+Value:   0x0001 (Notification Enable)
+
+// Response: Write Response
+Opcode:  0x13</code></pre>
+
+            <h3>💻 完整代码示例</h3>
+            <h4>Android 完整示例</h4>
+            <pre><code>public class BLEActivity extends AppCompatActivity {
+
+    private BluetoothManager bluetoothManager;
+    private BluetoothAdapter bluetoothAdapter;
+    private BluetoothGatt bluetoothGatt;
+    private String deviceAddress = "AA:BB:CC:DD:EE:FF";
+
+    // 电池服务 UUID
+    private static final UUID BATTERY_SERVICE_UUID = UUID.fromString("0000180f-0000-1000-8000-00805f9b34fb");
+    private static final UUID BATTERY_LEVEL_UUID = UUID.fromString("00002a19-0000-1000-8000-00805f9b34fb");
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_ble);
+
+        // 1. 初始化蓝牙
+        bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        bluetoothAdapter = bluetoothManager.getAdapter();
+
+        // 2. 检查蓝牙是否可用
+        if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, 1);
+        }
+    }
+
+    // ============ 第一步: 扫描设备 ============
+    private void startScan() {
+        // 扫描带特定服务的设备
+        ScanFilter filter = new ScanFilter.Builder()
+                .setServiceUuid(BATTERY_SERVICE_UUID)
+                .build();
+
+        ScanSettings settings = new ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .build();
+
+        bluetoothAdapter.getBluetoothLeScanner()
+                .startScan(Arrays.asList(filter), settings, scanCallback);
+    }
+
+    private ScanCallback scanCallback = new ScanCallback() {
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            BluetoothDevice device = result.getDevice();
+            // 显示设备: device.getName() + " " + device.getAddress()
+            // 找到目标设备后停止扫描
+            bluetoothAdapter.getBluetoothLeScanner().stopScan(this);
+            // 开始连接
+            connectToDevice(device);
+        }
+    };
+
+    // ============ 第二步: 连接设备 ============
+    private void connectToDevice(BluetoothDevice device) {
+        // 第三个参数 autoConnect: false = 快速连接
+        bluetoothGatt = device.connectGatt(this, false, gattCallback);
+    }
+
+    private BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
+
+        @Override
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                Log.d("BLE", "连接成功");
+                // 发现服务
+                gatt.discoverServices();
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                Log.d("BLE", "断开连接");
+            }
+        }
+
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.d("BLE", "服务发现完成");
+
+                // 获取电池服务
+                BluetoothGattService batteryService = gatt.getService(BATTERY_SERVICE_UUID);
+                if (batteryService != null) {
+                    // 获取电池电量特征值
+                    BluetoothGattCharacteristic batteryLevel = 
+                            batteryService.getCharacteristic(BATTERY_LEVEL_UUID);
+
+                    // 读取电量
+                    gatt.readCharacteristic(batteryLevel);
+
+                    // 订阅通知
+                    gatt.setCharacteristicNotification(batteryLevel, true);
+
+                    // 启用CCC描述符通知
+                    BluetoothGattDescriptor descriptor = batteryLevel.getDescriptor(
+                            UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"));
+                    descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                    gatt.writeDescriptor(descriptor);
+                }
+            }
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, 
+                BluetoothGattCharacteristic characteristic, int status) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                // 读取到的数据
+                byte[] data = characteristic.getValue();
+                if (data.length > 0) {
+                    int batteryLevel = data[0] & 0xFF;
+                    Log.d("BLE", "电池电量: " + batteryLevel + "%");
+                    // 更新UI
+                    runOnUiThread(() -> tvBattery.setText(batteryLevel + "%"));
+                }
+            }
+        }
+
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt,
+                BluetoothGattCharacteristic characteristic) {
+            // 收到通知数据
+            byte[] data = characteristic.getValue();
+            int batteryLevel = data[0] & 0xFF;
+            Log.d("BLE", "电量变化: " + batteryLevel + "%");
+            runOnUiThread(() -> tvBattery.setText(batteryLevel + "%"));
+        }
+    };
+
+    // 写入数据示例
+    private void writeData(byte[] data) {
+        BluetoothGattService service = bluetoothGatt.getService(CUSTOM_SERVICE_UUID);
+        BluetoothGattCharacteristic characteristic = service.getCharacteristic(CUSTOM_CHAR_UUID);
+        
+        characteristic.setValue(data);
+        characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
+        bluetoothGatt.writeCharacteristic(characteristic);
+    }
+
+    // 断开连接
+    private void disconnect() {
+        if (bluetoothGatt != null) {
+            bluetoothGatt.disconnect();
+            bluetoothGatt.close();
+        }
+    }
+}</code></pre>
+
+            <h4>iOS Swift 示例</h4>
+            <pre><code>import CoreBluetooth
+
+class BLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
+    
+    var centralManager: CBCentralManager!
+    var peripheral: CBPeripheral!
+    var batteryCharacteristic: CBCharacteristic!
+    
+    // UUID定义
+    let batteryServiceUUID = CBUUID(string: "180F")
+    let batteryLevelUUID = CBUUID(string: "2A19")
+    
+    override init() {
+        super.init()
+        centralManager = CBCentralManager(delegate: self, queue: nil)
+    }
+    
+    // 扫描设备
+    func startScan() {
+        centralManager.scanForPeripherals(withServices: nil, options: [
+            CBCentralManagerScanOptionAllowDuplicatesKey: false
+        ])
+    }
+    
+    // 发现设备
+    func centralManager(_ central: CBCentralManager, 
+                        didDiscover peripheral: CBPeripheral,
+                        advertisementData: [String: Any],
+                        rssi RSSI: NSNumber) {
+        
+        // 找到目标设备
+        if peripheral.name == "MY-DEV" {
+            self.peripheral = peripheral
+            peripheral.delegate = self
+            centralManager.stopScan()
+            // 连接
+            centralManager.connect(peripheral, options: nil)
+        }
+    }
+    
+    // 连接成功
+    func centralManager(_ central: CBCentralManager, 
+                        didConnect peripheral: CBPeripheral) {
+        print("连接成功")
+        // 发现服务
+        peripheral.discoverServices([batteryServiceUUID])
+    }
+    
+    // 发现服务
+    func peripheral(_ peripheral: CBPeripheral, 
+                    didDiscoverServices error: Error?) {
+        guard let services = peripheral.services else { return }
+        
+        for service in services {
+            if service.uuid == batteryServiceUUID {
+                // 发现特征值
+                peripheral.discoverCharacteristics([batteryLevelUUID], for: service)
+            }
+        }
+    }
+    
+    // 发现特征值
+    func peripheral(_ peripheral: CBPeripheral, 
+                    didDiscoverCharacteristicsFor service: CBService,
+                    error: Error?) {
+        guard let characteristics = service.characteristics else { return }
+        
+        for characteristic in characteristics {
+            if characteristic.uuid == batteryLevelUUID {
+                self.batteryCharacteristic = characteristic
+                
+                // 读取数据
+                peripheral.readValue(for: characteristic)
+                
+                // 订阅通知
+                peripheral.setNotifyValue(true, for: characteristic)
+            }
+        }
+    }
+    
+    // 读取数据
+    func peripheral(_ peripheral: CBPeripheral, 
+                    didUpdateValueFor characteristic: CBCharacteristic,
+                    error: Error?) {
+        if let data = characteristic.value {
+            let batteryLevel = data[0]
+            print("电池电量: \(batteryLevel)%")
+        }
+    }
+    
+    // 写入数据
+    func writeData(_ data: Data) {
+        if let characteristic = batteryCharacteristic {
+            peripheral.writeValue(data, for: characteristic, 
+                                 type: .withoutResponse)
+        }
+    }
+}</code></pre>
+
+            <h3>📋 常用Platform API对比</h3>
             <table class="table">
-                <thead><tr><th>应用场景</th><th>使用Profile</th><th>数据流向</th><th>通信模式</th></tr></thead>
+                <thead><tr><th>操作</th><th>Android</th><th>iOS</th><th>微信小程序</th></tr></thead>
                 <tbody>
-                    <tr><td>心率带</td><td>Heart Rate Profile</td><td>设备→手机</td><td>Notify</td></tr>
-                    <tr><td>智能手环</td><td>Device Info + Battery</td><td>双向</td><td>Read + Notify</td></tr>
-                    <tr><td>蓝牙键盘</td><td>HID Profile</td><td>设备→手机</td><td>Write NoResp</td></tr>
-                    <tr><td>蓝牙鼠标</td><td>HID Profile</td><td>设备→手机</td><td>Write NoResp</td></tr>
-                    <tr><td>体温计</td><td>Health Thermometer</td><td>设备→手机</td><td>Indicate</td></tr>
-                    <tr><td>智能灯</td><td>Custom Profile</td><td>手机→设备</td><td>Write</td></tr>
-                    <tr><td>OTA升级</td><td>DFU Profile</td><td>手机→设备</td><td>Write + Notify</td></tr>
+                    <tr><td>初始化</td><td>BluetoothManager</td><td>CBCentralManager</td><td>openBluetoothAdapter</td></tr>
+                    <tr><td>扫描</td><td>startScan</td><td>scanForPeripherals</td><td>startBluetoothDevicesDiscovery</td></tr>
+                    <tr><td>连接</td><td>connectGatt</td><td>connect</td><td>createBLEConnection</td></tr>
+                    <tr><td>发现服务</td><td>discoverServices</td><td>discoverServices</td><td>getBLEDeviceServices</td></tr>
+                    <tr><td>读取</td><td>readCharacteristic</td><td>readValue</td><td>readBLECharacteristicValue</td></tr>
+                    <tr><td>写入</td><td>writeCharacteristic</td><td>writeValue</td><td>writeBLECharacteristicValue</td></tr>
+                    <tr><td>通知</td><td>setNotifyValue</td><td>setNotifyValue</td><td>notifyBLECharacteristicValueChange</td></tr>
+                    <tr><td>断开</td><td>disconnect</td><td>cancelConnection</td><td>closeBLEConnection</td></tr>
                 </tbody>
             </table>
 
-            <h3>📋 标准GATT服务</h3>
+            <h3>⚠️ 常见问题排查</h3>
             <table class="table">
-                <thead><tr><th>服务</th><th>UUID</th><th>主要特征值</th></tr></thead>
+                <thead><tr><th>问题</th><th>原因</th><th>解决方案</th></tr></thead>
                 <tbody>
-                    <tr><td>Generic Access</td><td>1800</td><td>Device Name, Appearance</td></tr>
-                    <tr><td>Generic Attribute</td><td>1801</td><td>Service Changed</td></tr>
-                    <tr><td>Device Information</td><td>180a</td><td>Model, Serial, Firmware</td></tr>
-                    <tr><td>Battery Service</td><td>180f</td><td>Level (2a19)</td></tr>
-                    <tr><td>Heart Rate</td><td>180d</td><td>Measurement (2a37)</td></tr>
-                    <tr><td>Health Thermometer</td><td>1809</td><td>Temperature (2a1c)</td></tr>
-                    <tr><td>Blood Pressure</td><td>1810</td><td>Sys/Dia Pressure</td></tr>
-                    <tr><td>Human Interface Device</td><td>1812</td><td>Report</td></tr>
+                    <tr><td>扫描不到设备</td><td>设备未广播/距离太远</td><td>检查设备广播参数/缩短距离</td></tr>
+                    <tr><td>连接失败</td><td>设备忙碌/参数不匹配</td><td>等待设备就绪/检查UUID</td></tr>
+                    <tr><td>服务为空</td><td>服务未初始化完成</td><td>等待onServicesDiscovered</td></tr>
+                    <td>写入失败</td><td>特征值不支持写入</td><td>检查properties属性</td></tr>
+                <tr><td>通知收不到</td><td>未启用CCC描述符</td><td>写入0x0001到2902</td></tr>
                 </tbody>
             </table>
-
-            <h3>💻 代码示例: 读取电池电量</h3>
-            <pre><code>// Android (Java/Kotlin)
-BluetoothManager manager = getSystemService(BluetoothManager.class);
-BluetoothGatt gatt = device.connectGatt(this, false, gattCallback);
-
-// 1. 发现服务
-gatt.discoverServices();
-
-// 2. 在Callback中获取电池服务
-BluetoothGattService batteryService = gatt.getService(UUID.fromString("180f"));
-BluetoothGattCharacteristic batteryLevel = batteryService.getCharacteristic(UUID.fromString("2a19"));
-
-// 3. 读取数据
-gatt.readCharacteristic(batteryLevel);
-
-// 4. 订阅通知
-gatt.setCharacteristicNotification(batteryLevel, true);</code></pre>
-
-            <h3>💻 代码示例: 写入控制命令</h3>
-            <pre><code>// 写入数据控制LED
-byte[] data = new byte[] { 0x01 }; // 开灯
-
-BluetoothGattCharacteristic ledChar = ledService.getCharacteristic(
-    UUID.fromString("0000ff01-0000-1000-8000-00805f9b34fb"));
-
-ledChar.setValue(data);
-ledChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-gatt.writeCharacteristic(ledChar);</code></pre>
         </section>
 
         <!-- BLE开发 -->
