@@ -42,10 +42,11 @@
         <ul class="tree-nav">
             <li><a href="#intro">蓝牙核心</a></li>
             <li><a href="#stack">协议栈</a></li>
-            <li><a href="#app-layer">上层应用</a></li>
+            <li><a href="#app-layer">App通讯</a></li>
             <li><a href="#le">BLE开发</a></li>
             <li><a href="#connection">连接</a></li>
             <li><a href="#security">安全</a></li>
+            <li><a href="#examples">实战案例</a></li>
             <li><a href="#comparison">对比</a></li>
         </ul>
     </nav>
@@ -604,6 +605,418 @@ class BLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                     <tr><td>BLE</td><td>1-2Mbps</td><td>极低</td><td>IoT</td></tr>
                     <tr><td>经典蓝牙</td><td>1-3Mbps</td><td>中</td><td>音频</td></tr>
                     <tr><td>WiFi</td><td>100+Mbps</td><td>高</td><td>视频</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 实战案例 -->
+        <section id="examples" class="section section-gray">
+            <h2>蓝牙实战案例</h2>
+            <p>本节介绍几种常用的蓝牙应用场景及实现方式。</p>
+
+            <h3>📁 案例1: 蓝牙传输文件 (OBEX/FTP)</h3>
+            <p>经典蓝牙使用OBEX协议传输文件，BLE使用自定义GATT服务。</p>
+
+            <h4>经典蓝牙 - OBEX文件传输</h4>
+            <pre><code>// Android 经典蓝牙文件传输
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothObexTransport;
+import javax.obex.HeaderSet;
+import javax.obex.ObexSession;
+import javax.obex.ClientSession;
+import javax.obex.Operation;
+
+public class FileTransfer {
+
+    // 通过OBEX协议发送文件
+    public void sendFile(BluetoothDevice device, String filePath) throws IOException {
+        BluetoothSocket socket = device.createRfcommSocketToServiceRecord(
+            // OBEX UUID
+            UUID.fromString("00001106-0000-1000-8000-00805f9b34fb"));
+
+        socket.connect();
+
+        // 创建OBEX会话
+        BluetoothObexTransport transport = new BluetoothObexTransport(socket);
+        ClientSession session = new ClientSession(transport);
+
+        // 设置请求头
+        HeaderSet request = new HeaderSet();
+        request.setHeader(HeaderSet.NAME, "test.txt");
+        request.setHeader(HeaderSet.LENGTH, 1024L);
+
+        // 发起PUT请求
+        Operation operation = session.put(request);
+        OutputStream os = operation.openOutputStream();
+
+        // 写入文件数据
+        FileInputStream fis = new FileInputStream(filePath);
+        byte[] buffer = new byte[1024];
+        int len;
+        while ((len = fis.read(buffer)) != -1) {
+            os.write(buffer, 0, len);
+        }
+
+        os.close();
+        operation.close();
+        session.close();
+    }
+}</code></pre>
+
+            <h4>BLE - 自定义文件传输服务</h4>
+            <pre><code>// BLE 文件传输服务定义
+// 服务UUID: 0xFE59 (NUS - Nordic UART Service 变体)
+#define FILE_TRANSFER_SERVICE_UUID "0000fe59-0000-1000-8000-00805f9b34fb"
+
+// 特征值
+#define FILE_DATA_UUID    "0000ff01-0000-1000-8000-00805f9b34fb"  // Notify+Write
+#define FILE_CTRL_UUID   "0000ff02-0000-1000-8000-00805f9b34fb"  // Write
+#define FILE_SIZE_UUID   "0000ff03-0000-1000-8000-00805f9b34fb"  // Read
+
+// 控制命令
+#define CMD_START   0x01  // 开始传输
+#define CMD_DATA    0x02  // 数据包
+#define CMD_END     0x03  // 传输完成
+#define CMD_CANCEL  0x04  // 取消传输
+
+// 分包发送
+private void sendFileByBLE(byte[] fileData) {
+    int mtu = 512; // 协商后的MTU
+    int packetSize = mtu - 3; // ATT header
+    int totalPackets = (fileData.length + packetSize - 1) / packetSize;
+
+    // 1. 发送文件大小
+    byte[] sizeHeader = new byte[4];
+    ByteBuffer.wrap(sizeHeader).putInt(fileData.length);
+    writeControl(CMD_START, sizeHeader);
+
+    // 2. 分包发送数据
+    for (int i = 0; i < totalPackets; i++) {
+        int offset = i * packetSize;
+        int len = Math.min(packetSize, fileData.length - offset);
+        byte[] packet = new byte[len + 1];
+        packet[0] = CMD_DATA;
+        System.arraycopy(fileData, offset, packet, 1, len);
+        writeData(packet);
+    }
+
+    // 3. 发送完成
+    writeControl(CMD_END, new byte[0]);
+}</code></pre>
+
+            <h3>🎵 案例2: 蓝牙音频 (A2DP/HFP)</h3>
+            <p>经典蓝牙用于音频传输，支持高音质音频播放和通话。</p>
+
+            <h4>Audio Streaming (A2DP)</h4>
+            <pre><code>// Android A2DP 音频播放
+import android.bluetooth.A2dpSinkProfile;
+import android.bluetooth.BluetoothA2dpSink;
+
+public class BluetoothAudio {
+
+    private BluetoothAdapter bluetoothAdapter;
+    private BluetoothA2dpSink a2dpSink;
+
+    // 获取已配对的A2DP设备
+    public List<BluetoothDevice> getA2dpDevices() {
+        Set<BluetoothDevice> devices = bluetoothAdapter.getBondedDevices();
+        List<BluetoothDevice> a2dpDevices = new ArrayList<>();
+
+        for (BluetoothDevice device : devices) {
+            if (device.getBluetoothClass().getMajorDeviceClass()
+                    == BluetoothClass.Device.Major.AUDIO_VIDEO) {
+                a2dpDevices.add(device);
+            }
+        }
+        return a2dpDevices;
+    }
+
+    // 连接A2DP设备
+    public boolean connectA2dp(BluetoothDevice device) {
+        try {
+            Method connectMethod = BluetoothA2dpSink.class.getMethod(
+                "connect", BluetoothDevice.class);
+            return (boolean) connectMethod.invoke(a2dpSink, device);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // 播放音乐
+    public void playMusic() {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(Uri.parse(fileUri), "audio/*");
+        startActivity(Intent.createChooser(intent, "播放音乐"));
+    }
+}</code></pre>
+
+            <h4>免提通话 (HFP)</h4>
+            <pre><code>// Android HFP 免提通话
+import android.bluetooth.BluetoothHeadset;
+
+public class HandsFree {
+
+    private BluetoothHeadset bluetoothHeadset;
+
+    // 获取已连接的HFP设备
+    public BluetoothDevice getConnectedHfpDevice() {
+        List<BluetoothDevice> devices = 
+            bluetoothHeadset.getConnectedDevices();
+        return devices.isEmpty() ? null : devices.get(0);
+    }
+
+    // 发起通话
+    public boolean dial(String phoneNumber) {
+        return bluetoothHeadset.dial(phoneNumber);
+    }
+
+    // 接听电话
+    public boolean acceptCall() {
+        return bluetoothHeadset.acceptCall();
+    }
+
+    // 挂断电话
+    public boolean rejectCall() {
+        return bluetoothHeadset.rejectCall();
+    }
+
+    // 关闭通话
+    public boolean hangup() {
+        return bluetoothHeadset.voiceCommand();
+    }
+}</code></pre>
+
+            <h3>⌨️ 案例3: 蓝牙键鼠 (HID)</h3>
+            <p>HID (Human Interface Device) 配置文件用于键盘、鼠标、游戏手柄等。</p>
+
+            <h4>作为HID设备 (BLE)</h4>
+            <pre><code>// Nordic nRF52 HID服务
+// HID Service UUID: 0x1812
+
+#define HID_SERVICE_UUID        0x1812
+#define HID_REPORT_MAP_UUID     0x2A4B  // 报告描述符
+#define HID_CONTROL_POINT_UUID  0x2A4C  // 控制点
+#define HID_REPORT_UUID         0x2A4D  // 报告
+#define HID_PROTO_MODE_UUID     0x2A4E  // 协议模式
+
+// 键盘报告描述符
+const uint8_t keyboard_report_desc[] = {
+    0x05, 0x01,        // Usage Page (Generic Desktop)
+    0x09, 0x06,        // Usage (Keyboard)
+    0xA1, 0x01,        // Collection (Application)
+    0x85, 0x01,        //   Report ID (1)
+    0x05, 0x07,        //   Usage Page (Keyboard)
+    0x19, 0xE0,        //   Usage Min (Left Ctrl)
+    0x29, 0xE7,        //   Usage Max (Right GUI)
+    0x15, 0x00,        //   Logical Min (0)
+    0x25, 0x01,        //   Logical Max (1)
+    0x75, 0x01,        //   Report Size (1)
+    0x95, 0x08,        //   Report Count (8)
+    0x81, 0x02,        //   Input (Data, Variable, Absolute)
+    0x95, 0x01,        //   Report Count (1)
+    0x75, 0x08,        //   Report Size (8)
+    0x81, 0x01,        //   Input (Constant)
+    0x95, 0x05,        //   Report Count (5)
+    0x75, 0x01,        //   Report Size (1)
+    0x05, 0x08,        //   Usage Page (LED)
+    0x19, 0x01,        //   Usage Min (1)
+    0x29, 0x05,        //   Usage Max (5)
+    0x91, 0x02,        //   Output (Data, Variable, Absolute)
+    0x95, 0x01,        //   Report Count (1)
+    0x75, 0x03,        //   Report Size (3)
+    0x91, 0x01,        //   Output (Constant)
+    0x95, 0x06,        //   Report Count (6)
+    0x75, 0x08,        //   Report Size (8)
+    0x15, 0x00,        //   Logical Min (0)
+    0x25, 0x65,        //   Logical Max (101)
+    0x05, 0x07,        //   Usage Page (Keyboard)
+    0x19, 0x00,        //   Usage Min (0)
+    0x29, 0x65,        //   Usage Max (101)
+    0x81, 0x00,        //   Input (Data, Array, Absolute)
+    0xC0               // End Collection
+};
+
+// 发送键盘按键
+void send_key(uint8_t key) {
+    uint8_t report[8] = {0};
+    report[2] = key;  // Key code
+    ble_hids_keyboard_send(report);
+}</code></pre>
+
+            <h3>📱 案例4: 微信小程序蓝牙控制智能设备</h3>
+            <pre><code>// 微信小程序 - 控制智能灯
+Page({
+    data: {
+        deviceId: '',
+        serviceId: '',
+        characteristicId: '',
+        connected: false,
+        lightOn: false
+    },
+
+    // 1. 初始化蓝牙
+    initBluetooth() {
+        wx.openBluetoothAdapter({
+            success: () => this.startScan(),
+            fail: () => wx.showToast({title: '请开启蓝牙', icon: 'none'})
+        })
+    },
+
+    // 2. 扫描设备
+    startScan() {
+        wx.startBluetoothDevicesDiscovery({
+            success: () => {
+                wx.onBluetoothDeviceFound((res) => {
+                    res.devices.forEach(device => {
+                        if (device.name && device.name.includes('SmartLight')) {
+                            this.setData({ deviceId: device.deviceId });
+                            wx.stopDiscovery();
+                            this.connectDevice(device.deviceId);
+                        }
+                    })
+                })
+            }
+        })
+    },
+
+    // 3. 连接设备
+    connectDevice(deviceId) {
+        wx.createBLEConnection({
+            deviceId,
+            success: () => {
+                this.setData({ connected: true });
+                this.getServices(deviceId);
+            }
+        })
+    },
+
+    // 4. 获取服务
+    getServices(deviceId) {
+        wx.getBLEDeviceServices({
+            deviceId,
+            success: (res) => {
+                // 找到自定义服务
+                const service = res.services.find(s => 
+                    s.isPrimary && s.uuid.includes('FE59'));
+                if (service) {
+                    this.setData({ serviceId: service.uuid });
+                    this.getCharacteristics(deviceId, service.uuid);
+                }
+            }
+        })
+    },
+
+    // 5. 获取特征值
+    getCharacteristics(deviceId, serviceId) {
+        wx.getBLEDeviceCharacteristics({
+            deviceId,
+            serviceId,
+            success: (res) => {
+                const char = res.characteristics.find(c =>
+                    c.properties.write || c.properties.notify);
+                if (char) {
+                    this.setData({ characteristicId: char.uuid });
+                    // 启用通知
+                    if (char.properties.notify) {
+                        wx.notifyBLECharacteristicValueChange({
+                            deviceId, serviceId,
+                            characteristicId: char.uuid,
+                            state: true
+                        });
+                    }
+                }
+            }
+        })
+    },
+
+    // 6. 控制灯开关
+    toggleLight() {
+        const buffer = new ArrayBuffer(1);
+        const dataView = new DataView(buffer);
+        dataView.setUint8(0, this.data.lightOn ? 0x00 : 0x01);
+
+        wx.writeBLECharacteristicValue({
+            deviceId: this.data.deviceId,
+            serviceId: this.data.serviceId,
+            characteristicId: this.data.characteristicId,
+            value: buffer,
+            success: () => {
+                this.setData({ lightOn: !this.data.lightOn });
+            }
+        });
+    }
+})</code></pre>
+
+            <h3>🔋 案例5: 电池电量监测</h3>
+            <pre><code>// 读取标准电池服务
+// Service: 0x180F
+// Characteristic: 0x2A19 (Battery Level)
+
+// Android
+BluetoothGattService batteryService = gatt.getService(
+    UUID.fromString("0000180f-0000-1000-8000-00805f9b34fb"));
+BluetoothGattCharacteristic batteryLevel = batteryService.getCharacteristic(
+    UUID.fromString("00002a19-0000-1000-8000-00805f9b34fb"));
+
+// 读取
+gatt.readCharacteristic(batteryLevel);
+
+// 订阅通知
+gatt.setCharacteristicNotification(batteryLevel, true);
+BluetoothGattDescriptor descriptor = batteryLevel.getDescriptor(
+    UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"));
+descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+gatt.writeDescriptor(descriptor);
+
+// 回调中获取数据
+@Override
+public void onCharacteristicChanged(BluetoothGatt gatt,
+        BluetoothGattCharacteristic characteristic) {
+    int level = characteristic.getIntValue(
+        BluetoothGattCharacteristic.FORMAT_UINT8, 0);
+    Log.d("Battery", "电量: " + level + "%");
+}</code></pre>
+
+            <h3>🌡️ 案例6: 体温计数据读取</h3>
+            <pre><code>// Health Thermometer Service
+// Service: 0x1809
+// Characteristic: 0x2A1E (Temperature Measurement)
+
+// 数据格式 (5 bytes)
+struct {
+    uint8_t flags;        // bit0: 0=Celsius, 1=Fahrenheit
+    int32_t temperature; // IEEE 11073 FLOAT
+} temp_measurement;
+
+// 解析体温数据
+private float parseTemperature(byte[] data) {
+    int flags = data[0];
+    boolean isFahrenheit = (flags & 0x01) == 1;
+
+    // IEEE 11073 32-bit FLOAT
+    int mantissa = (data[4] << 24) | (data[3] << 16) | (data[2] << 8) | (data[1]);
+    int exponent = data[4] >> 8;
+
+    float temperature = mantissa * Math.pow(10, exponent);
+
+    if (isFahrenheit) {
+        temperature = temperature * 9 / 5 + 32;
+    }
+
+    return temperature;
+}</code></pre>
+
+            <h3>📋 案例对比表</h3>
+            <table class="table">
+                <thead><tr><th>案例</th><th>使用Profile</th><th>蓝牙类型</th><th>通信方式</th></tr></thead>
+                <tbody>
+                    <tr><td>文件传输</td><td>OBEX/FTP</td><td>经典蓝牙</td><td>PUT/GET</td></tr>
+                    <tr><td>音频播放</td><td>A2DP</td><td>经典蓝牙</td><td>Stream</td></tr>
+                    <tr><td>免提通话</td><td>HFP</td><td>经典蓝牙</td><td>AT Commands</td></tr>
+                    <tr><td>键盘鼠标</td><td>HID</td><td>BLE/经典</td><td>Report</td></tr>
+                    <tr><td>智能灯控</td><td>Custom GATT</td><td>BLE</td><td>Write/Notify</td></tr>
+                    <tr><td>电量监测</td><td>BAS</td><td>BLE</td><td>Read/Notify</td></tr>
+                    <tr><td>体温计</td><td>HTS</td><td>BLE</td><td>Indicate</td></tr>
                 </tbody>
             </table>
         </section>
