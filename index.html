@@ -12,54 +12,53 @@
     <nav class="sidebar">
         <div class="sidebar-header">
             <span class="sidebar-logo">📡</span>
-            <span class="sidebar-title">蓝牙教程</span>
+            <span class="sidebar-title">蓝牙开发</span>
         </div>
         <ul class="tree-nav">
-            <li><a href="#intro">什么是蓝牙</a></li>
+            <li><a href="#intro">蓝牙核心</a></li>
             <li>
                 <details open>
-                    <summary>基础概念</summary>
+                    <summary>协议栈</summary>
                     <ul>
-                        <li><a href="#protocol-stack">协议栈</a></li>
-                        <li><a href="#versions">版本演进</a></li>
-                        <li><a href="#architecture">架构图</a></li>
+                        <li><a href="#protocol-stack">分层架构</a></li>
+                        <li><a href="#hci">HCI层</a></li>
+                        <li><a href="#l2cap">L2CAP</a></li>
+                        <li><a href="#att-gatt">ATT/GATT</a></li>
                     </ul>
                 </details>
             </li>
             <li>
                 <details open>
-                    <summary>核心功能</summary>
+                    <summary>BLE开发</summary>
                     <ul>
-                        <li><a href="#discovery">设备发现</a></li>
-                        <li><a href="#pairing">配对机制</a></li>
-                        <li><a href="#connection">连接管理</a></li>
-                        <li><a href="#security">安全机制</a></li>
+                        <li><a href="#gap">GAP角色</a></li>
+                        <li><a href="#advertising">广播</a></li>
+                        <li><a href="#connection">连接</a></li>
+                        <li><a href="#gatt">GATT服务</a></li>
                     </ul>
                 </details>
             </li>
             <li>
                 <details open>
-                    <summary>常见应用</summary>
+                    <summary>安全</summary>
                     <ul>
-                        <li><a href="#audio">音频传输</a></li>
-                        <li><a href="#data">数据传输</a></li>
-                        <li><a href="#iot">物联网</a></li>
-                        <li><a href="#le">低功耗蓝牙 BLE</a></li>
+                        <li><a href="#pairing">配对流程</a></li>
+                        <li><a href="#security">加密</a></li>
+                        <li><a href="# whitelist">白名单</a></li>
                     </ul>
                 </details>
             </li>
             <li>
                 <details>
-                    <summary>常见问题</summary>
+                    <summary>实战</summary>
                     <ul>
-                        <li><a href="#faq-connection">连接问题</a></li>
-                        <li><a href="#faq-pairing">配对问题</a></li>
-                        <li><a href="#faq-audio">音频问题</a></li>
-                        <li><a href="#faq-battery">电量问题</a></li>
+                        <li><a href="#debug">调试</a></li>
+                        <li><a href="#optimize">优化</a></li>
+                        <li><a href="#troubleshooting">排错</a></li>
                     </ul>
                 </details>
             </li>
-            <li><a href="#comparison">技术对比</a></li>
+            <li><a href="#comparison">协议选型</a></li>
         </ul>
     </nav>
 
@@ -67,61 +66,69 @@
     <main class="main">
         <!-- 简介 -->
         <section id="intro" class="section">
-            <h2>什么是蓝牙？</h2>
-            <p>蓝牙是一种短距离无线通信技术，工作在2.4GHz ISM频段，用于在设备间进行数据传输和语音通信。</p>
-            
-            <h3>核心特性</h3>
+            <h2>蓝牙核心概念</h2>
+            <p>蓝牙是一种工作在2.4GHz ISM频段的短距离无线通信协议，采用跳频扩频(FHSS)技术实现抗干扰，支持经典蓝牙(BR/EDR)和低功耗蓝牙(BLE)两种模式。</p>
+
+            <h3>技术规格详解</h3>
             <div class="grid">
                 <div class="card">
-                    <h3>📡 短距离通信</h3>
-                    <p>有效范围通常在10-100米，适合个人区域网络（PAN）</p>
+                    <h3>📡 频段与信道</h3>
+                    <p>2.4GHz ISM频段 (2400-2483.5 MHz)</p>
+                    <ul>
+                        <li>BLE: 40个信道 (每2MHz)</li>
+                        <li>经典蓝牙: 79个信道 (每1MHz)</li>
+                        <li>跳频: 1600hop/s (BLE) / 1600hop/s (经典)</li>
+                    </ul>
                 </div>
                 <div class="card">
-                    <h3>🔌 即插即用</h3>
-                    <p>无需布线，设备间自动发现和连接</p>
+                    <h3>📊 调制方式</h3>
+                    <p>GFSK (高斯频移键控)</p>
+                    <ul>
+                        <li>BT=0.5, 调制指数=0.45-0.55</li>
+                        <li>BLE 1M PHY: 1Mbps</li>
+                        <li>BLE 2M PHY: 2Mbps</li>
+                        <li>BLE Coded PHY: 500kbps/125kbps</li>
+                    </ul>
                 </div>
                 <div class="card">
-                    <h3>🔐 安全可靠</h3>
-                    <p>支持多种加密和认证机制</p>
+                    <h3>🔋 功率等级</h3>
+                    <ul>
+                        <li>Class 1: 100mW (+20dBm), 100m</li>
+                        <li>Class 2: 2.5mW (+4dBm), 10m</li>
+                        <li>Class 3: 1mW (0dBm), 1m</li>
+                    </ul>
                 </div>
                 <div class="card">
-                    <h3>⚡ 低功耗</h3>
-                    <p>BLE版本支持超低功耗运行</p>
+                    <h3>🔒 调制差异</h3>
+                    <ul>
+                        <li>经典蓝牙: BR/EDR, EDR(π/4-DQPSK, 8DPSK)</li>
+                        <li>BLE: 单模设备, 无法与经典蓝牙兼容</li>
+                    </ul>
                 </div>
             </div>
 
-            <h3>技术规格</h3>
+            <h3>双模 vs 单模</h3>
             <table class="table">
                 <thead>
                     <tr>
-                        <th>参数</th>
-                        <th>规格</th>
+                        <th>类型</th>
+                        <th>支持模式</th>
+                        <th>典型应用</th>
+                        <th>芯片</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>工作频段</strong></td>
-                        <td>2.4GHz ISM (2400-2483.5 MHz)</td>
+                        <td><strong>双模 (BR/EDR+BLE)</strong></td>
+                        <td>A2DP, HFP, SPP + GATT</td>
+                        <td>手机、平板、PC</td>
+                        <td>Qualcomm, Broadcom</td>
                     </tr>
                     <tr>
-                        <td><strong>信道数</strong></td>
-                        <td>40个信道（每2MHz一个）</td>
-                    </tr>
-                    <tr>
-                        <td><strong>调制方式</strong></td>
-                        <td>GFSK（高斯频移键控）</td>
-                    </tr>
-                    <tr>
-                        <td><strong>传输速率</strong></td>
-                        <td>1-3 Mbps（经典蓝牙），1-2 Mbps（BLE）</td>
-                    </tr>
-                    <tr>
-                        <td><strong>有效范围</strong></td>
-                        <td>10-100米（Class 1/2/3）</td>
-                    </tr>
-                    <tr>
-                        <td><strong>最大设备数</strong></td>
-                        <td>7个活动设备（经典蓝牙），无限（BLE）</td>
+                        <td><strong>单模 (BLE Only)</strong></td>
+                        <td>GATT only</td>
+                        <td>IoT设备、传感器</td>
+                        <td>Nordic, TI, Dialog</td>
                     </tr>
                 </tbody>
             </table>
@@ -130,74 +137,76 @@
         <!-- 协议栈 -->
         <section id="protocol-stack" class="section section-gray">
             <h2>蓝牙协议栈</h2>
-            
-            <h3>完整协议栈架构</h3>
+
+            <h3>分层架构</h3>
             <div class="layer-diagram">
                 <div class="layer-stack">
                     <div class="layer layer-app">
-                        应用层 Profiles (A2DP, HFP, SPP, GATT等)
-                        <span class="layer-size">具体应用场景</span>
+                        应用层 Profiles (GAP, GATT, ANP, HRP等)
+                        <span class="layer-size">业务逻辑</span>
                     </div>
                     <div class="layer layer-deps">
-                        主机层 Host (L2CAP, SDP, ATT, SMP, GATT)
-                        <span class="layer-size">协议适配和服务</span>
+                        主机层 Host
+                        <span class="layer-size">L2CAP, ATT, SMP, GATT, GAP</span>
                     </div>
                     <div class="layer layer-runtime">
-                        控制器层 Controller (HCI, Link Layer, PHY)
-                        <span class="layer-size">物理链路控制</span>
+                        主机控制器接口 HCI
+                        <span class="layer-size">UART/SPI/USB</span>
                     </div>
                     <div class="layer layer-os">
-                        物理层 Physical Layer (RF)
-                        <span class="layer-size">2.4GHz射频</span>
+                        控制器 Controller
+                        <span class="layer-size">Link Layer + PHY</span>
                     </div>
                 </div>
             </div>
 
-            <h3>分层详解</h3>
+            <h3>核心层详解</h3>
             <div class="grid">
                 <div class="card">
-                    <h3>物理层 (PHY)</h3>
-                    <p>负责射频信号传输，包括调制、解调、跳频等</p>
+                    <h3>PHY (Physical Layer)</h3>
                     <ul>
-                        <li>频率：2.4GHz</li>
-                        <li>调制：GFSK</li>
-                        <li>跳频：1600跳/秒</li>
+                        <li>RF射频收发</li>
+                        <li>GFSK调制解调</li>
+                        <li>发射接收切换</li>
+                        <li>Channel Index → RF频率</li>
                     </ul>
                 </div>
                 <div class="card">
-                    <h3>链路层 (Link Layer)</h3>
-                    <p>管理设备间的连接、广播和发现</p>
+                    <h3>Link Layer</h3>
                     <ul>
-                        <li>设备扫描</li>
-                        <li>连接建立</li>
-                        <li>数据传输</li>
+                        <li>状态机: Standby/Adv/Scann/Initiator/Connected</li>
+                        <li>广播/扫描/连接</li>
+                        <li>数据加解密</li>
+                        <li>CRC校验</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>HCI (Host Controller Interface)</h3>
+                    <ul>
+                        <li>Command/Event/ACL/SCO</li>
+                        <li>Flow Control</li>
+                        <li>Buffer Management</li>
                     </ul>
                 </div>
                 <div class="card">
                     <h3>L2CAP</h3>
-                    <p>逻辑链路控制和适配协议，提供数据分段和重组</p>
                     <ul>
-                        <li>多路复用</li>
-                        <li>分段重组</li>
-                        <li>流量控制</li>
+                        <li>Channel ID (CID) 复用</li>
+                        <li>Segmentation/Reassembly</li>
+                        <li>Flow Control</li>
+                        <li>LE Credit Based Flow</li>
                     </ul>
                 </div>
-                <div class="card">
-                    <h3>ATT/GATT</h3>
-                    <p>属性协议和通用属性配置文件</p>
-                    <ul>
-                        <li>服务定义</li>
-                        <li>特征值读写</li>
-                        <li>数据通知</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <h3>SDP</h3>
-                    <p>服务发现协议，查找设备提供的服务</p>
-                    <ul>
-                        <li>服务搜索</li>
-                        <li>属性查询</li>
-                        <li>连接配置</li>
+            </div>
+
+            <h3>HCI指令类型</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>类型</th>
+                        <th>OGF</th>
+                        <th>示例</th>
+                        <th>说明
                     </ul>
                 </div>
                 <div class="card">
@@ -709,87 +718,134 @@
         <!-- 连接管理 -->
         <section id="connection" class="section">
             <h2>连接管理</h2>
-            
-            <h3>连接参数</h3>
+
+            <h3>连接参数详解</h3>
             <table class="table">
                 <thead>
                     <tr>
                         <th>参数</th>
-                        <th>说明</th>
-                        <th>典型值</th>
-                        <th>影响</th>
+                        <th>范围</th>
+                        <th>计算公式</th>
+                        <th>典型场景</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>连接间隔</strong></td>
-                        <td>两个连接事件之间的时间</td>
-                        <td>7.5ms - 4s</td>
-                        <td>间隔短→低延迟，功耗高</td>
+                        <td><strong>interval_min</strong></td>
+                        <td>6 - 3200</td>
+                        <td>interval * 1.25ms</td>
+                        <td>实时:7.5ms, 传感器:1s</td>
                     </tr>
                     <tr>
-                        <td><strong>从设备延迟</strong></td>
-                        <td>从设备可跳过的连接事件数</td>
+                        <td><strong>interval_max</strong></td>
+                        <td>6 - 3200</td>
+                        <td>interval * 1.25ms</td>
+                        <td>实时:15ms, 传感器:2s</td>
+                    </tr>
+                    <tr>
+                        <td><strong>slave_latency</strong></td>
                         <td>0 - 499</td>
-                        <td>延迟大→省电，响应慢</td>
+                        <td>跳过连接事件数</td>
+                        <td>省电:99, 低延迟:0</td>
                     </tr>
                     <tr>
-                        <td><strong>超时时间</strong></td>
-                        <td>无响应时连接超时时间</td>
+                        <td><strong>supervision_timeout</strong></td>
+                        <td>10 - 3200</td>
+                        <td>timeout * 10ms</td>
                         <td>100ms - 32s</td>
-                        <td>超时短→快速断开，可靠性降低</td>
                     </tr>
                 </tbody>
             </table>
 
-            <h3>连接状态机</h3>
-            <div class="state-diagram">
-                <div class="state-node state-idle" style="top: 50px; left: 50px;">空闲</div>
-                <div class="state-node state-advertising" style="top: 50px; left: 250px;">广播</div>
-                <div class="state-node state-scanning" style="top: 50px; left: 450px;">扫描</div>
-                <div class="state-node state-initiating" style="top: 200px; left: 150px;">发起连接</div>
-                <div class="state-node state-connected" style="top: 200px; left: 350px;">已连接</div>
-                
-                <div class="state-arrow" style="top: 70px; left: 130px; width: 80px;">→</div>
-                <div class="state-arrow" style="top: 70px; left: 330px; width: 80px;">→</div>
-                <div class="state-arrow" style="top: 120px; left: 270px; height: 50px;">↓</div>
-                <div class="state-arrow" style="top: 120px; left: 470px; height: 50px;">↓</div>
-                <div class="state-arrow" style="top: 220px; left: 200px; width: 100px;">→</div>
-                <div class="state-arrow" style="top: 220px; left: 400px; width: 80px;">→</div>
-                <div class="state-arrow" style="top: 220px; left: 370px; width: 80px; transform: rotate(180deg);">→</div>
-                <div class="state-arrow" style="top: 120px; left: 370px; height: 50px; transform: rotate(180deg);">↓</div>
-            </div>
-            <p style="text-align: center; color: var(--text-light); font-size: 14px;">
-                空闲 ↔ 广播 ↔ 扫描 ↔ 发起连接 ↔ 已连接
-            </p>
+            <h3>参数计算示例</h3>
+            <pre><code>// 计算最小有效间隔
+// 条件: supervision_timeout > (1 + slave_latency) * interval * 2
 
-            <h3>连接优化策略</h3>
+// 传感器场景 (低功耗)
+// interval = 1000ms (800)
+// slave_latency = 99
+// timeout = 10s (1000)
+// 实际: 1s * 100 = 100s > 10s OK
+
+// 手环场景 (平衡)
+// interval = 50ms (40)
+// slave_latency = 4
+// timeout = 4s (400)
+// 实际: 50ms * 6 = 300ms < 4s OK
+
+// 音频场景 (低延迟)
+// interval = 7.5ms (6)
+// slave_latency = 0
+// timeout = 500ms (50)
+// 实际: 7.5ms * 2 = 15ms < 500ms OK</code></pre>
+
+            <h3>连接事件时序</h3>
+            <pre><code>// BLE 连接事件时序
+// [T0] Connection Event Start
+// [T0] Subevent #1: Data Exchange
+// [T1] Subevent #2: (if Coded PHY)
+// [Tx] ...
+// [T_end] Connection Event End
+//
+// 多个连接事件之间空闲，可以省电
+// 设备可选择不响应特定事件(slave latency)
+
+// 传输窗口 (Transmit Window)
+// 首次连接: 首次发送数据的窗口
+// window_offset: 0 - window_size
+// window_size: 1.25ms - late</code></pre>
+
+            <h3>连接参数配置</h3>
+            <pre><code>// ESP-IDF BLE 连接参数配置
+esp_err_t esp_ble_gap_set_prefer_conn_params(
+    esp_bd_addr_t bda,
+    uint16_t min_conn_int,    // 最小连接间隔
+    uint16_t max_conn_int,    // 最大连接间隔
+    uint16_t slave_latency,   // 从设备延迟
+    uint16_t conn_timeout     // 监督超时
+) {
+    // 低延迟配置 (游戏手柄)
+    min_conn_int = 6;   // 7.5ms
+    max_conn_int = 8;   // 10ms
+    slave_latency = 0;
+    conn_timeout = 400; // 4s
+
+    // 传感器配置
+    min_conn_int = 800;  // 1s
+    max_conn_int = 1600; // 2s
+    slave_latency = 99;
+    conn_timeout = 1000; // 10s
+
+    return ESP_OK;
+}</code></pre>
+
+            <h3>连接优化场景</h3>
             <div class="grid">
                 <div class="card">
-                    <h3>低延迟模式</h3>
-                    <p>适用于实时应用</p>
+                    <h3>低延迟</h3>
                     <ul>
-                        <li>连接间隔：7.5-15ms</li>
-                        <li>从设备延迟：0</li>
-                        <li>应用：音频、游戏</li>
+                        <li>interval: 7.5-15ms</li>
+                        <li>latency: 0</li>
+                        <li>timeout: 500ms</li>
+                        <li>场景: 游戏、遥控器</li>
                     </ul>
                 </div>
                 <div class="card">
-                    <h3>平衡模式</h3>
-                    <p>适用于一般应用</p>
+                    <h3>平衡</h3>
                     <ul>
-                        <li>连接间隔：30-100ms</li>
-                        <li>从设备延迟：0-4</li>
-                        <li>应用：数据传输</li>
+                        <li>interval: 30-50ms</li>
+                        <li>latency: 0-4</li>
+                        <li>timeout: 2s</li>
+                        <li>场景: 键盘、鼠标</li>
                     </ul>
                 </div>
                 <div class="card">
-                    <h3>低功耗模式</h3>
-                    <p>适用于电池供电设备</p>
+                    <h3>低功耗</h3>
                     <ul>
-                        <li>连接间隔：500ms-4s</li>
-                        <li>从设备延迟：4-99</li>
-                        <li>应用：传感器</li>
+                        <li>interval: 1-4s</li>
+                        <li>latency: 50-99</li>
+                        <li>timeout: 10s</li>
+                        <li>场景: 传感器、手环</li>
                     </ul>
                 </div>
             </div>
@@ -798,15 +854,139 @@
         <!-- 安全机制 -->
         <section id="security" class="section section-gray">
             <h2>安全机制</h2>
-            
-            <h3>安全特性</h3>
+
+            <h3>配对流程</h3>
+            <pre><code>// BLE 配对流程 (LE Secure Connections)
+// Phase 1: 能力交换 (Capability Exchange)
+// Phase 2: 公钥交换 (Public Key Exchange)
+// Phase 3: 认证 (Authentication)
+// Phase 4: 密钥分发 (Key Distribution)
+
+// IO Capabilities
+enum {
+    IO_CAP_DISPLAY_ONLY,     // 仅显示
+    IO_CAP_DISPLAY_YESNO,    // 显示+确认
+    IO_CAP_KEYBOARD_ONLY,    // 仅键盘
+    IO_CAP_NO_INPUT_NO_OUTPUT, // 无输入输出
+    IO_CAP_KEYBOARD_DISPLAY  // 键盘+显示
+};
+
+// 认证要求
+enum {
+    AUTH_REQ_NO_BOND,        // 不绑定
+    AUTH_REQ_NO_MITM,        // 无中间人
+    AUTH_REQ_BOND,           // 绑定
+    AUTH_REQ_MITM,           // 中间人保护
+    AUTH_REQ_SC,             // 安全连接
+    AUTH_REQ_SC_BOND        // 安全连接+绑定
+};</code></pre>
+
+            <h3>加密算法</h3>
             <div class="grid">
                 <div class="card">
-                    <h3>🔐 加密</h3>
-                    <p>保护数据传输隐私</p>
+                    <h3>LE Legacy</h3>
                     <ul>
-                        <li>AES-128加密</li>
-                        <li>可选加密强度</li>
+                        <li>加密: AES-CCM</li>
+                        <li>密钥: TK (Temporary Key)</li>
+                        <li>STK: E21(k, rand, r)</li>
+                        <li>已被淘汰</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>LE Secure Connections</h3>
+                    <ul>
+                        <li>加密: AES-CCM</li>
+                        <li>密钥: P-256 ECDH</li>
+                        <li>OOB: 可选</li>
+                        <li>强制配对</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>数据签名</h3>
+                    <ul>
+                        <li>Algorithm: AES-CMAC</li>
+                        <li>签名数据: Authenticated</li>
+                        <li>无加密</li>
+                        <li>物联网场景</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>安全级别</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Mode</th>
+                        <th>Level</th>
+                        <th>加密</th>
+                        <th>认证</th>
+                        <th>典型场景</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Mode 1</td>
+                        <td>Level 1</td>
+                        <td>无</td>
+                        <td>无</td>
+                        <td>Beacon</td>
+                    </tr>
+                    <tr>
+                        <td>Mode 1</td>
+                        <td>Level 2</td>
+                        <td>无加密</td>
+                        <td>未认证</td>
+                        <td>简单配对</td>
+                    </tr>
+                    <tr>
+                        <td>Mode 1</td>
+                        <td>Level 3</td>
+                        <td>加密</td>
+                        <td>未认证</td>
+                        <td>经典配对</td>
+                    </tr>
+                    <tr>
+                        <td>Mode 1</td>
+                        <td>Level 4</td>
+                        <td>加密</td>
+                        <td>认证(MITM)</td>
+                        <td>安全连接</td>
+                    </tr>
+                    <tr>
+                        <td>Mode 2</td>
+                        <td>Level 1</td>
+                        <td>签名</td>
+                        <td>未认证</td>
+                        <td>数据签名</td>
+                    </tr>
+                    <tr>
+                        <td>Mode 2</td>
+                        <td>Level 2</td>
+                        <td>签名</td>
+                        <td>认证(MITM)</td>
+                        <td>签名+MITM</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>白名单过滤</h3>
+            <pre><code>// 使用白名单过滤广播设备
+// 典型场景: 室内定位、批量配网
+
+// 添加设备到白名单
+esp_err_t esp_ble_gap_update_whitelist(
+    bool add,
+    esp_bd_addr_t bd_addr,
+    esp_ble_wl_addr_type_t addr_type
+) {
+    // add = true: 添加
+    // add = false: 移除
+}
+
+// 白名单用途
+// 1. 只扫描白名单设备
+// 2. 只接受白名单连接
+// 3. 家长控制场景</code></pre>
                         <li>数据完整性校验</li>
                     </ul>
                 </div>
@@ -1047,131 +1227,126 @@
 
         <!-- 数据传输 -->
         <section id="data" class="section section-gray">
-            <h2>数据传输</h2>
-            
-            <h3>数据传输协议</h3>
-            <div class="grid">
-                <div class="card">
-                    <h3>SPP</h3>
-                    <p>串口配置文件</p>
-                    <ul>
-                        <li>模拟串口通信</li>
-                        <li>双向数据传输</li>
-                        <li>最大速率：2.1 Mbps</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <h3>OBEX</h3>
-                    <p>对象交换协议</p>
-                    <ul>
-                        <li>文件传输</li>
-                        <li>名片交换</li>
-                        <li>基于SPP</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <h3>GATT</h3>
-                    <p>通用属性配置文件</p>
-                    <ul>
-                        <li>BLE数据传输</li>
-                        <li>服务-特征值模型</li>
-                        <li>读写/通知/指示</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <h3>FTP</h3>
-                    <p>文件传输配置文件</p>
-                    <ul>
-                        <li>蓝牙文件传输</li>
-                        <li>文件夹浏览</li>
-                        <li>基于OBEX</li>
-                    </ul>
-                </div>
-            </div>
+            <h2>GATT数据传输</h2>
 
-            <h3>GATT服务结构</h3>
-            <div class="mindmap">
-                <div class="mindmap-root">
-                    <div class="mindmap-center">📡 GATT服务</div>
-                    <div class="mindmap-branches">
-                        <div class="mindmap-branch">
-                            <div class="mindmap-node primary">Service</div>
-                            <div class="mindmap-children">
-                                <div class="mindmap-leaf">UUID标识</div>
-                                <div class="mindmap-leaf">包含多个特征值</div>
-                                <div class="mindmap-leaf">可包含其他服务</div>
-                            </div>
-                        </div>
-                        <div class="mindmap-branch">
-                            <div class="mindmap-node success">Characteristic</div>
-                            <div class="mindmap-children">
-                                <div class="mindmap-leaf">UUID标识</div>
-                                <div class="mindmap-leaf">Value值</div>
-                                <div class="mindmap-leaf">Properties属性</div>
-                                <div class="mindmap-leaf">Descriptors描述符</div>
-                            </div>
-                        </div>
-                        <div class="mindmap-branch">
-                            <div class="mindmap-node info">Descriptor</div>
-                            <div class="mindmap-children">
-                                <div class="mindmap-leaf">CCC</div>
-                                <div class="mindmap-leaf">用户描述</div>
-                                <div class="mindmap-leaf">格式描述</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <h3>数据传输方式</h3>
+            <h3>数据传输模式</h3>
             <table class="table">
                 <thead>
                     <tr>
-                        <th>方式</th>
-                        <th>读取 (Read)</th>
-                        <th>写入 (Write)</th>
-                        <th>通知 (Notify)</th>
-                        <th>指示 (Indicate)</th>
+                        <th>模式</th>
+                        <th>ATT Opcode</th>
+                        <th>确认</th>
+                        <th>适用场景</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>方向</strong></td>
-                        <td>从设备→中心设备</td>
-                        <td>中心设备→从设备</td>
-                        <td>从设备→中心设备</td>
-                        <td>从设备→中心设备</td>
+                        <td><strong>Read</strong></td>
+                        <td>0x0A/0x0B</td>
+                        <td>需要</td>
+                        <td>配置读取、状态查询</td>
                     </tr>
                     <tr>
-                        <td><strong>确认</strong></td>
+                        <td><strong>Write</strong></td>
+                        <td>0x12/0x13</td>
                         <td>需要</td>
-                        <td>需要</td>
+                        <td>控制指令、写入确认</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Write Without Response</strong></td>
+                        <td>0x52</td>
                         <td>不需要</td>
+                        <td>大数据流、按键事件</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Notify</strong></td>
+                        <td>0x1B</td>
+                        <td>不需要</td>
+                        <td>传感器数据、心率</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Indicate</strong></td>
+                        <td>0x1D</td>
                         <td>需要</td>
-                    </tr>
-                    <tr>
-                        <td><strong>可靠性</strong></td>
-                        <td>高</td>
-                        <td>高</td>
-                        <td>中</td>
-                        <td>高</td>
-                    </tr>
-                    <tr>
-                        <td><strong>延迟</strong></td>
-                        <td>中</td>
-                        <td>中</td>
-                        <td>低</td>
-                        <td>中</td>
-                    </tr>
-                    <tr>
-                        <td><strong>应用场景</strong></td>
-                        <td>查询状态</td>
-                        <td>设置参数</td>
-                        <td>实时数据</td>
-                        <td>重要数据</td>
+                        <td>重要告警、OTA升级</td>
                     </tr>
                 </tbody>
             </table>
+
+            <h3>MTU协商</h3>
+            <pre><code>// MTU (Maximum Transmission Unit)
+// 默认: 23 bytes (BLE 4.0)
+// 最大: 512 bytes (BLE 5.0)
+
+// ATT MTU = 协议开销 + 数据
+// 23 = 4(ATT Header) + 20(L2CAP payload) - 1(MIC)
+// 512 = 3(ATT Header) + 512(L2CAP)
+
+// 协商流程
+// 1. Client: Exchange MTU Request (client_rx_mtu)
+// 2. Server: Exchange MTU Response (server_rx_mtu)
+// 3. 实际MTU = min(client_rx_mtu, server_rx_mtu)
+
+// 性能对比
+// MTU=23: 每次传输20字节数据
+// MTU=512: 每次传输512-3=509字节数据
+// 大数据: 提升25倍吞吐量</code></pre>
+
+            <h3>数据分片与重组</h3>
+            <pre><code>// 当数据 > MTU-3 时需要分片
+// L2CAP 协议自动处理，但需要注意:
+// - ATT Write Request: 单次最大 MTU-3
+// - ATT Handle Value Notify: 单次最大 MTU-3
+
+// 分包发送示例
+def send_long_data(conn, handle, data, mtu=20):
+    """大数据分包发送"""
+    for i in range(0, len(data), mtu):
+        chunk = data[i:i+mtu]
+        conn.write_gatt_char(handle, chunk)
+        await asyncio.sleep(0.01)  # 避免拥塞
+
+// 接收端重组
+buffer = bytearray()
+def on_notify(sender, data):
+    buffer.extend(data)
+    if is_complete(buffer):
+        process_data(buffer)</code></pre>
+
+            <h3>属性表设计</h3>
+            <pre><code>// Nordic nRF5 SDK 风格服务定义
+// 自定义 UART 服务 (Nordic UART Service)
+
+#define NUS_SERVICE_UUID         0x0001
+#define NUS_CHAR_RX_UUID        0x0002  // 写, Notify
+#define NUS_CHAR_TX_UUID        0x0003  // 读, Notify, WriteNoResp
+
+// 属性表
+const ble_gatt_attr_t attr_table[] = {
+    // 服务声明
+    { BLE_GATT_HANDLE_INVALID,
+      {.p_uuid = BLE_UUID16(GAP_SERVICE_UUID) },
+      .init_len = 2, .max_len = 2,
+      .flags = BLE_GATT_ATTR_F_READ },
+
+    // TX 特征值声明
+    { BLE_GATT_HANDLE_INVALID,
+      {.p_uuid = BLE_UUID16(GAP_CHARACTERISTIC_UUID) },
+      .init_len = 3, .max_len = 3,
+      .flags = BLE_GATT_ATTR_F_READ },
+
+    // TX 特征值
+    { BLE_GATT_HANDLE_INVALID,
+      {.p_uuid = BLE_UUID16(NUS_CHAR_TX_UUID) },
+      .init_len = 0, .max_len = 256,
+      .flags = BLE_GATT_ATTR_F_NOTIFY },
+
+    // CCC for TX
+    { BLE_GATT_HANDLE_INVALID,
+      {.p_uuid = BLE_UUID16(CLIENT_CHAR_CONFIG_UUID) },
+      .init_len = 2, .max_len = 2,
+      .flags = BLE_GATT_ATTR_F_WRITE },
+};</code></pre>
 
             <h3>跨平台蓝牙开发</h3>
             <p>以下是使用不同编程语言和平台调用蓝牙功能的代码示例：</p>
@@ -1675,92 +1850,187 @@ function formatUUID(shortUUID) {
 
         <!-- 低功耗蓝牙 -->
         <section id="le" class="section section-gray">
-            <h2>低功耗蓝牙 (BLE)</h2>
-            
-            <h3>BLE核心特性</h3>
+            <h2>BLE开发核心</h2>
+
+            <h3>GAP角色与模式</h3>
             <div class="grid">
                 <div class="card">
-                    <h3>🔋 超低功耗</h3>
-                    <p>纽扣电池可运行数年</p>
+                    <h3>Peripheral (周边)</h3>
+                    <p>广播设备，被中心扫描连接</p>
                     <ul>
-                        <li>待机：<1μA</li>
-                        <li>广播：~15mA</li>
-                        <li>连接：~15mA</li>
+                        <li>典型: 传感器、手环</li>
+                        <li>功耗: 广播 > 待机</li>
+                        <li>单连接</li>
                     </ul>
                 </div>
                 <div class="card">
-                    <h3>⚡ 快速连接</h3>
-                    <p>6ms内建立连接</p>
+                    <h3>Central (中心)</h3>
+                    <p>扫描并连接周边设备</p>
                     <ul>
-                        <li>广播间隔：20ms</li>
-                        <li>连接间隔：7.5ms</li>
-                        <li>快速唤醒</li>
+                        <li>典型: 手机、PC</li>
+                        <li>多连接支持</li>
+                        <li>发起LL连接请求</li>
                     </ul>
                 </div>
                 <div class="card">
-                    <h3>📱 多连接</h3>
-                    <p>支持无限并发连接</p>
+                    <h3>Observer (观察者)</h3>
+                    <p>仅扫描，不连接</p>
                     <ul>
-                        <li>中心设备：多连接</li>
-                        <li>周边设备：单连接</li>
-                        <li>适合中心化架构</li>
+                        <li>典型: 蓝牙定位器</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Broadcaster (广播者)</h3>
+                    <p>仅广播，不连接</p>
+                    <ul>
+                        <li>典型: Beacon</li>
+                        <li>iBeacon/Eddystone</li>
                     </ul>
                 </div>
             </div>
 
-            <h3>BLE vs 经典蓝牙功耗对比</h3>
-            <div class="power-comparison">
-                <div class="power-bar">
-                    <div class="power-label">经典蓝牙</div>
-                    <div class="power-value">持续连接</div>
-                    <div class="power-bar-fill power-bar-high" style="width: 100%;"></div>
+            <h3>广播类型与参数</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>类型</th>
+                        <th>PDU</th>
+                        <th>用途</th>
+                        <th>响应</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>ADV_IND</td>
+                        <td>可连接非定向</td>
+                        <td>一般广播</td>
+                        <td>SCAN_REQ / CONNECT_IND</td>
+                    </tr>
+                    <tr>
+                        <td>ADV_DIRECT_IND</td>
+                        <td>可连接定向</td>
+                        <td>快速重连</td>
+                        <td>CONNECT_IND</td>
+                    </tr>
+                    <tr>
+                        <td>ADV_SCAN_IND</td>
+                        <td>可扫描非定向</td>
+                        <td>获取设备名称</td>
+                        <td>SCAN_RSP</td>
+                    </tr>
+                    <tr>
+                        <td>ADV_NONCONN_IND</td>
+                        <td>不可连接非定向</td>
+                        <td>Beacon</td>
+                        <td>无</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>连接参数优化</h3>
+            <pre><code>// 连接参数 (Connection Parameters)
+struct {
+    uint16_t interval_min;    // 7.5ms - 4s
+    uint16_t interval_max;
+    uint16_t slave_latency;  // 0 - 499
+    uint16_t supervision_timeout; // 100ms - 32s
+} connection_params;
+
+// 参数计算
+// interval: 实际连接间隔 = interval * 1.25ms
+// latency: 跳过的连接事件数 (省电)
+// timeout: 链路超时 = timeout * 10ms
+
+// 功耗优化建议
+// - 大数据传输: interval=7.5ms, latency=0
+// - 传感器: interval=1s, latency=99
+// - 低延迟游戏: interval=7.5ms, latency=0</code></pre>
+
+            <h3>GATT服务设计</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3>服务声明</h3>
+                    <ul>
+                        <li>Handle: 0x0001</li>
+                        <li>UUID: 0x2800 (Primary)</li>
+                        <li>Value: Service UUID</li>
+                    </ul>
                 </div>
-                <div class="power-bar">
-                    <div class="power-label">BLE 连接</div>
-                    <div class="power-value">间歇传输</div>
-                    <div class="power-bar-fill power-bar-medium" style="width: 30%;"></div>
+                <div class="card">
+                    <h3>特征值声明</h3>
+                    <ul>
+                        <li>Handle: 0x0002</li>
+                        <li>UUID: 0x2803</li>
+                        <li>Properties: RW/N/Ind</li>
+                    </ul>
                 </div>
-                <div class="power-bar">
-                    <div class="power-label">BLE 广播</div>
-                    <div class="power-value">周期唤醒</div>
-                    <div class="power-bar-fill power-bar-low" style="width: 10%;"></div>
+                <div class="card">
+                    <h3>特征值</h3>
+                    <ul>
+                        <li>Handle: 0x0003</li>
+                        <li>UUID: 自定义/标准</li>
+                        <li>Value: 数据</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>描述符 (可选)</h3>
+                    <ul>
+                        <li>CCC: 0x2902 (通知)</li>
+                        <li>Format: 0x2901</li>
+                        <li>User Desc: 0x2900</li>
+                    </ul>
                 </div>
             </div>
 
-            <h3>BLE状态转换</h3>
-            <div class="flowchart">
-                <div class="flow-step">
-                    <div class="flow-box info">
-                        <div class="flow-icon">💤</div>
-                        待机状态
-                    </div>
-                    <div class="flow-label"><1μA</div>
-                </div>
-                <div class="flow-arrow"></div>
-                <div class="flow-step">
-                    <div class="flow-box primary">
-                        <div class="flow-icon">📡</div>
-                        广播状态
-                    </div>
-                    <div class="flow-label">~15mA</div>
-                </div>
-                <div class="flow-arrow"></div>
-                <div class="flow-step">
-                    <div class="flow-box success">
-                        <div class="flow-icon">🔗</div>
-                        连接状态
-                    </div>
-                    <div class="flow-label">~15mA</div>
-                </div>
-                <div class="flow-arrow"></div>
-                <div class="flow-step">
-                    <div class="flow-box warning">
-                        <div class="flow-icon">💤</div>
-                        待机状态
-                    </div>
-                    <div class="flow-label"><1μA</div>
-                </div>
-            </div>
+            <h3>ATT操作码</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Opcode</th>
+                        <th>名称</th>
+                        <th>方向</th>
+                        <th>可靠性</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>0x03</td>
+                        <td>Read By Type Request</td>
+                        <td>C→P</td>
+                        <td>需要</td>
+                    </tr>
+                    <tr>
+                        <td>0x04</td>
+                        <td>Read By Type Response</td>
+                        <td>P→C</td>
+                        <td>需要</td>
+                    </tr>
+                    <tr>
+                        <td>0x0B</td>
+                        <td>Write Request</td>
+                        <td>C→P</td>
+                        <td>需要</td>
+                    </tr>
+                    <tr>
+                        <td>0x0C</td>
+                        <td>Write Response</td>
+                        <td>P→C</td>
+                        <td>需要</td>
+                    </tr>
+                    <tr>
+                        <td>0x1B</td>
+                        <td>Handle Value Notification</td>
+                        <td>P→C</td>
+                        <td>不需要</td>
+                    </tr>
+                    <tr>
+                        <td>0x1D</td>
+                        <td>Handle Value Indication</td>
+                        <td>P→C</td>
+                        <td>需要</td>
+                    </tr>
+                </tbody>
+            </table>
         </section>
 
         <!-- 常见问题 - 连接 -->
