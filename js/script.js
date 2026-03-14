@@ -353,4 +353,28 @@ function addThemeToggle() {
 // 取消注释以启用主题切换
 // addThemeToggle();
 
+// Tab 切换功能
+document.addEventListener('DOMContentLoaded', function() {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // 移除所有 active
+            this.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            // 添加 active 到当前
+            this.classList.add('active');
+
+            // 隐藏所有 tab 内容
+            const tabContainer = this.closest('.tab-container');
+            tabContainer.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // 显示对应的 tab 内容
+            const tabId = this.getAttribute('data-tab');
+            tabContainer.querySelector(`#${tabId}`).classList.add('active');
+        });
+    });
+});
+
 console.log('蓝牙教程网站已加载完成！');

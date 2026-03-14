@@ -266,6 +266,59 @@ pre code {
     font-size: 14px;
 }
 
+/* Tab 切换 */
+.tab-container {
+    margin: 20px 0;
+}
+
+.tab-buttons {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-light);
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    background: var(--bg);
+    color: var(--primary);
+}
+
+.tab-btn.active {
+    background: var(--pre-bg);
+    color: var(--pre-text);
+    border-bottom-color: var(--pre-bg);
+}
+
+.tab-content {
+    display: none;
+    margin-bottom: 24px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.tab-content h4 {
+    margin: 16px 0 8px;
+    color: var(--text);
+    font-size: 15px;
+}
+
+.tab-content pre {
+    margin: 12px 0;
+}
+
 /* 表格 */
 .table {
     width: 100%;

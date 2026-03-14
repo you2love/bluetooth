@@ -1172,6 +1172,390 @@
                     </tr>
                 </tbody>
             </table>
+
+            <h3>跨平台蓝牙开发</h3>
+            <p>以下是使用不同编程语言和平台调用蓝牙功能的代码示例：</p>
+
+            <!-- Python -->
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="python">Python</button>
+                    <button class="tab-btn" data-tab="golang">GoLang</button>
+                    <button class="tab-btn" data-tab="miniprogram">微信小程序</button>
+                </div>
+
+                <!-- Python 示例 -->
+                <div class="tab-content active" id="python">
+                    <h4>Python - 使用 bleak 库 (跨平台 BLE)</h4>
+                    <pre><code>安装：pip install bleak
+
+import asyncio
+from bleak import BleakClient, BleakScanner
+
+# 设备 UUID
+DEVICE_NAME = "My BLE Device"
+SERVICE_UUID = "0000180f-0000-1000-8000-00805f9b34fb"
+CHARACTERISTIC_UUID = "00002a19-0000-1000-8000-00805f9b34fb"
+
+async def scan_devices():
+    """扫描蓝牙设备"""
+    devices = await BleakScanner.discover()
+    for d in devices:
+        print(f"设备: {d.name}, 地址: {d.address}")
+
+async def connect_and_notify():
+    """连接设备并订阅通知"""
+    address = "AA:BB:CC:DD:EE:FF"  # 目标设备MAC地址
+
+    async with BleakClient(address) as client:
+        print(f"已连接: {client.is_connected}")
+
+        # 获取所有服务
+        for service in client.services:
+            print(f"服务: {service.uuid}")
+            for char in service.characteristics:
+                print(f"  特征: {char.uuid}, 属性: {char.properties}")
+
+        # 订阅通知
+        def notification_handler(sender, data):
+            print(f"收到通知: {data}")
+
+        await client.start_notify(CHARACTERISTIC_UUID, notification_handler)
+
+        # 读取数据
+        data = await client.read_gatt_char(CHARACTERISTIC_UUID)
+        print(f"读取数据: {data}")
+
+        # 写入数据
+        await client.write_gatt_char(CHARACTERISTIC_UUID, b"Hello BLE")
+
+        await asyncio.sleep(10)  # 保持连接
+        await client.stop_notify(CHARACTERISTIC_UUID)
+
+asyncio.run(connect_and_notify())</code></pre>
+
+                    <h4>Python - 使用 pybluez (经典蓝牙)</h4>
+                    <pre><code>安装：pip install pybluez
+
+import bluetooth
+
+# 扫描设备
+devices = bluetooth.discover_devices(lookup_names=True)
+for addr, name in devices:
+    print(f"设备: {name}, 地址: {addr}")
+
+# SPP 串口通信
+target_address = "AA:BB:CC:DD:EE:FF"
+port = 1  # RFCOMM 端口
+
+sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+sock.connect((target_address, port))
+
+# 发送数据
+sock.send(b"Hello Bluetooth")
+
+# 接收数据
+data = sock.recv(1024)
+print(f"收到: {data}")
+
+sock.close()</code></pre>
+                </div>
+
+                <!-- GoLang 示例 -->
+                <div class="tab-content" id="golang">
+                    <h4>GoLang - 使用 go-ble 库</h4>
+                    <pre><code>安装：go get github.com/go-ble/ble
+
+package main
+
+import (
+    "context"
+    "encoding/hex"
+    "fmt"
+    "time"
+
+    "github.com/go-ble/ble"
+    "github.com/go-ble/ble/examples/lib/gatt"
+)
+
+const (
+    deviceAddr  = "AA:BB:CC:DD:EE:FF"
+    serviceUUID = "180f"  // 电池服务
+    charUUID    = "2a19"  // 电池电量特征
+)
+
+func main() {
+    ctx := ble.WithSigHandler(context.WithTimeout(context.Background(), 10*time.Second))
+
+    // 扫描设备
+    cln, err := ble.Connect(ctx, deviceAddr)
+    if err != nil {
+        panic(err)
+    }
+    defer cln.CancelConnection()
+
+    // 等待连接
+    if !cln.Connected() {
+        fmt.Println("连接超时")
+        return
+    }
+    fmt.Println("已连接")
+
+    // 发现服务
+    svcs, err := cln.DiscoverServices(nil)
+    if err != nil {
+        panic(err)
+    }
+
+    for _, svc := range svcs {
+        fmt.Printf("服务: %s\n", svc.UUID.String())
+        chars, _ := cln.DiscoverCharacteristics(nil, svc)
+        for _, char := range chars {
+            fmt.Printf("  特征: %s\n", char.UUID.String())
+        }
+    }
+
+    // 读取特征值
+    char, err := cln.DiscoverCharacteristic(ble.MustParse(charUUID), nil)
+    if err != nil {
+        panic(err)
+    }
+
+    b, err := cln.Read(char)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Printf("电池电量: %d%%\n", b[0])
+
+    // 订阅通知
+    ch := make(chan []byte, 5)
+    if err := cln.Subscribe(char, false, func(req []byte) { ch <- req }); err != nil {
+        panic(err)
+    }
+
+    // 写入数据
+    data := []byte("Hello BLE")
+    if err := cln.WriteCharacteristic(char, data, false); err != nil {
+        panic(err)
+    }
+
+    // 保持连接
+    select {}
+}</code></pre>
+
+                    <h4>GoLang - 使用 tinyb 库 (Linux)</h4>
+                    <pre><code>安装：go get github.com/adafruit/tinyb
+
+package main
+
+import (
+    "fmt"
+    "github.com/adafruit/tinyb"
+    "time"
+)
+
+func main() {
+    // 初始化蓝牙管理器
+    manager, err := tinyb.NewManager()
+    if err != nil {
+        panic(err)
+    }
+
+    // 启动蓝牙适配器
+    adapter, err := manager.GetAdapter("hci0")
+    if err != nil {
+        panic(err)
+    }
+
+    adapter.Powered(true)
+
+    // 扫描设备 (5秒)
+    device, err := adapter.GetDevice("AA:BB:CC:DD:EE:FF")
+    if err != nil {
+        panic(err)
+    }
+
+    // 连接设备
+    err = device.Connect()
+    if err != nil {
+        panic(err)
+    }
+    defer device.Disconnect()
+
+    // 获取 GATT 客户端
+    gatt, err := device.GetGATTClient()
+    if err != nil {
+        panic(err)
+    }
+
+    // 发现服务
+    services, err := gatt.DiscoverServices(nil)
+    for _, svc := range services {
+        fmt.Println("Service:", svc.UUID())
+    }
+
+    fmt.Println("蓝牙连接成功!")
+}</code></pre>
+                </div>
+
+                <!-- 微信小程序示例 -->
+                <div class="tab-content" id="miniprogram">
+                    <h4>微信小程序 - 蓝牙 BLE 开发</h4>
+                    <pre><code>// 初始化蓝牙适配器
+initBluetooth() {
+    wx.openBluetoothAdapter({
+      success: (res) => {
+        console.log('蓝牙适配器初始化成功');
+        this.startScan();
+      },
+      fail: (err) => {
+        wx.showToast({ title: '请开启蓝牙', icon: 'none' });
+      }
+    });
+},
+
+// 扫描蓝牙设备
+startScan() {
+    wx.startBluetoothDevicesDiscovery({
+      allowDuplicatesKey: false,
+      success: (res) => {
+        wx.onBluetoothDeviceFound((devices) => {
+          devices.devices.forEach(device => {
+            if (device.name && device.name.includes('MyDevice')) {
+              this.setData({ targetDevice: device });
+            }
+          });
+        });
+      }
+    });
+},
+
+// 连接蓝牙设备
+connectDevice() {
+    const deviceId = this.data.targetDevice.deviceId;
+
+    wx.createBLEConnection({
+      deviceId,
+      success: () => {
+        console.log('连接成功');
+        this.getBLEServices(deviceId);
+      },
+      fail: (err) => {
+        console.error('连接失败', err);
+      }
+    });
+},
+
+// 获取服务列表
+getBLEServices(deviceId) {
+    wx.getBLEDeviceServices({
+      deviceId,
+      success: (res) => {
+        const services = res.services;
+        // 查找目标服务
+        const targetService = services.find(s => s.isPrimary);
+        if (targetService) {
+          this.getBLECharacteristics(deviceId, targetService.uuid);
+        }
+      }
+    });
+},
+
+// 获取特征值
+getBLECharacteristics(deviceId, serviceId) {
+    wx.getBLEDeviceCharacteristics({
+      deviceId,
+      serviceId,
+      success: (res) => {
+        const chars = res.characteristics;
+        chars.forEach(char => {
+          // 订阅通知
+          if (char.properties.notify || char.properties.indicate) {
+            wx.notifyBLECharacteristicValueChange({
+              deviceId,
+              serviceId,
+              characteristicId: char.uuid,
+              state: true,
+            });
+          }
+
+          // 读取数据
+          if (char.properties.read) {
+            wx.readBLECharacteristicValue({
+              deviceId,
+              serviceId,
+              characteristicId: char.uuid,
+            });
+          }
+        });
+      }
+    });
+},
+
+// 监听特征值变化
+onNotifyChange() {
+    wx.onBLECharacteristicValueChange((characteristic) => {
+      const buffer = characteristic.value;
+      const data = new Uint8Array(buffer);
+      console.log('收到数据:', data);
+    });
+},
+
+// 写入数据
+writeData() {
+    const buffer = new ArrayBuffer(5)
+    const dataView = new DataView(buffer)
+    dataView.setUint8(0, 0x01)
+    dataView.setUint8(1, 0x02)
+    dataView.setUint8(2, 0x03)
+
+    wx.writeBLECharacteristicValue({
+      deviceId: this.data.deviceId,
+      serviceId: this.data.serviceId,
+      characteristicId: this.data.characteristicId,
+      value: buffer,
+      success: () => {
+        console.log('写入成功');
+      }
+    });
+},
+
+// 断开连接
+closeConnection() {
+    wx.closeBLEConnection({
+      deviceId: this.data.deviceId,
+      success: () => {
+        console.log('已断开');
+      }
+    });
+}</code></pre>
+
+                    <h4>微信小程序 - 常用 UUID 定义</h4>
+                    <pre><code>// 常用 BLE 服务 UUID
+const SERVICES = {
+    BATTERY: '180f',           // 电池服务
+    HEART_RATE: '180d',        // 心率服务
+    DEVICE_INFO: '180a',       // 设备信息服务
+    GENERIC_ACCESS: '1800',    // 通用访问
+    GENERIC_ATTRIBUTE: '1801', // 通用属性
+};
+
+// 常用特征值 UUID
+const CHARACTERISTICS = {
+    BATTERY_LEVEL: '2a19',    // 电池电量
+    HEART_RATE_MEASUREMENT: '2a37',  // 心率测量
+    DEVICE_VERSION: '2a28',   // 设备版本
+    MANUFACTURER_NAME: '2a29', // 制造商名称
+    MODEL_NUMBER: '2a24',     // 型号
+    SERIAL_NUMBER: '2a25',    // 序列号
+};
+
+// 转换完整 UUID (小程序需要 128 位 UUID)
+function formatUUID(shortUUID) {
+    return `0000${shortUUID}-0000-1000-8000-00805f9b34fb`;
+}</code></pre>
+                </div>
+            </div>
         </section>
 
         <!-- 物联网 -->
