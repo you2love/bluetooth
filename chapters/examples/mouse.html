@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蓝牙鼠标 - 蓝牙协议开发教程</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">📡</span>
+            <span class="sidebar-title">蓝牙开发</span>
+        </div>
+        <ul class="tree-nav">
+            <li><a href="../intro.html">蓝牙核心</a></li>
+            <li><a href="../protocol-stack.html">协议栈</a></li>
+            <li><a href="../connection.html">连接管理</a></li>
+            <li><a href="../data.html">GATT 传输</a></li>
+            <li><a href="../ble.html">BLE 开发</a></li>
+            <li>
+                <details open>
+                    <summary>实践案例</summary>
+                    <ul>
+                        <li><a href="index.html">案例概览</a></li>
+                        <li><a href="heart-rate.html">心率传感器</a></li>
+                        <li><a href="gps.html">GPS 追踪器</a></li>
+                        <li><a href="mouse.html" class="active">蓝牙鼠标</a></li>
+                        <li><a href="keyboard.html">蓝牙键盘</a></li>
+                        <li><a href="headset.html">蓝牙耳机</a></li>
+                    </ul>
+                </details>
+            </li>
+            <li><a href="../security.html">安全机制</a></li>
+            <li><a href="../troubleshooting.html">排错指南</a></li>
+            <li><a href="../comparison.html">技术对比</a></li>
+        </ul>
+    </nav>
+
+    <main class="main">
+        <section class="section">
+            <h2>🖱️ 蓝牙鼠标</h2>
+            <p class="lead">基于 HID over GATT Profile 的无线鼠标，低延迟、低功耗设计。</p>
+
+            <h3>📐 HID over GATT 架构</h3>
+            <div class="mermaid">
+flowchart TB
+    subgraph Mouse["蓝牙鼠标"]
+        SENSOR[光学传感器] --> MCU[BLE MCU]
+        BUTTON[按键扫描] --> MCU
+        MCU --> ANT[天线]
+    end
+    
+    subgraph Host["主机 (PC/手机)"]
+        ANT2[天线] --> HOST[Host OS]
+        HOST --> HID[HID 驱动]
+        HID --> CURSOR[光标控制]
+    end
+    
+    ANT -.->|BLE 低延迟连接 | ANT2
+    
+    style Mouse fill:#e3f2fd,stroke:#007bff
+    style Host fill:#d4edda,stroke:#28a745
+            </div>
+
+            <h3>📋 HID 服务结构</h3>
+            <div class="mermaid">
+flowchart TB
+    subgraph HID["HID 服务 0x1812"]
+        INFO[HID 信息 0x2A4A]
+        REPORT_MAP[报告映射 0x2A4B]
+        CTRL_PT[控制点 0x2A4C]
+        REPORT[报告特征值 0x2A4D]
+    end
+    
+    REPORT --> CCCD[CCCD 0x2902]
+    
+    subgraph Report["鼠标报告类型"]
+        INPUT[输入报告<br/>移动/按键]
+        OUTPUT[输出报告<br/>LED 控制]
+        FEATURE[特征报告<br/>DPI 设置]
+    end
+    
+    style HID fill:#e3f2fd,stroke:#007bff
+    style INPUT fill:#fff3cd,stroke:#ffc107
+            </div>
+
+            <h3>📊 鼠标输入报告格式</h3>
+            <pre><code class="language-c">// HID 输入报告格式 (标准鼠标)
+// Report ID: 0x01
+// 总长度：5 bytes
+
+typedef struct {
+    uint8_t  report_id;    // Report ID (0x01)
+    uint8_t  buttons;      // 按键状态
+    int8_t   x_axis;       // X 轴移动 (-127~127)
+    int8_t   y_axis;       // Y 轴移动 (-127~127)
+    int8_t   wheel;        // 滚轮 (-127~127)
+} mouse_input_report_t;
+
+// 按键位定义
+#define MOUSE_BTN_LEFT    0x01
+#define MOUSE_BTN_RIGHT   0x02
+#define MOUSE_BTN_MIDDLE  0x04
+#define MOUSE_BTN_BACK    0x08
+#define MOUSE_BTN_FORWARD 0x10
+
+// 示例：左键按下，向右移动 10 像素，向上移动 5 像素
+uint8_t mouse_report[] = {
+    0x01,  // Report ID
+    0x01,  // Buttons: Left clicked
+    0x0A,  // X: +10
+    0xFB,  // Y: -5 (向上，补码)
+    0x00   // Wheel: 无滚动
+};
+
+// HID 报告描述符 (Report Descriptor)
+const uint8_t report_descriptor[] = {
+    0x05, 0x01,        // Usage Page (Desktop)
+    0x09, 0x02,        // Usage (Mouse)
+    0xA1, 0x01,        // Collection (Application)
+    
+    0x85, 0x01,        //   Report ID (1)
+    0x09, 0x01,        //   Usage (Pointer)
+    0xA1, 0x00,        //   Collection (Physical)
+    
+    0x05, 0x09,        //     Usage Page (Button)
+    0x19, 0x01,        //     Usage Minimum (1)
+    0x29, 0x05,        //     Usage Maximum (5)
+    0x15, 0x00,        //     Logical Minimum (0)
+    0x25, 0x01,        //     Logical Maximum (1)
+    0x95, 0x05,        //     Report Count (5)
+    0x75, 0x01,        //     Report Size (1)
+    0x81, 0x02,        //     Input (Data, Var, Abs)
+    
+    0x95, 0x01,        //     Report Count (1)
+    0x75, 0x03,        //     Report Size (3)
+    0x81, 0x01,        //     Input (Cnst)
+    
+    0x05, 0x01,        //     Usage Page (Desktop)
+    0x09, 0x30,        //     Usage (X)
+    0x09, 0x31,        //     Usage (Y)
+    0x15, 0x81,        //     Logical Minimum (-127)
+    0x25, 0x7F,        //     Logical Maximum (127)
+    0x75, 0x08,        //     Report Size (8)
+    0x95, 0x02,        //     Report Count (2)
+    0x81, 0x06,        //     Input (Data, Var, Rel)
+    
+    0x09, 0x38,        //     Usage (Wheel)
+    0x81, 0x06,        //     Input (Data, Var, Rel)
+    
+    0xC0,              //   End Collection
+    0xC0               // End Collection
+};</code></pre>
+
+            <h3>📈 完整工作流程</h3>
+            <div class="mermaid">
+sequenceDiagram
+    participant Mouse as 蓝牙鼠标
+    participant Host as 主机 (PC)
+    
+    Note over Mouse,Host: 1. 配对模式
+    Mouse->>Mouse: 进入配对 (长按)
+    Mouse->>Host: ADV_IND (可配对)
+    
+    Note over Mouse,Host: 2. 配对连接
+    Host->>Mouse: CONNECT_IND
+    Host->>Mouse: 配对请求
+    Mouse-->>Host: 配对确认
+    Host->>Mouse: 加密建立
+    
+    Note over Mouse,Host: 3. 服务发现
+    Host->>Mouse: 发现 HID 服务
+    Host->>Mouse: 读取报告描述符
+    
+    Note over Mouse,Host: 4. 启用通知
+    Host->>Mouse: 写入 CCCD (启用)
+    
+    Note over Mouse,Host: 5. 数据传输
+    loop 移动/点击
+        Mouse->>Host: 输入报告通知
+    end
+    
+    Note over Mouse,Host: 6. 低功耗
+    Mouse->>Mouse: 无操作 5s
+    Mouse->>Host: 进入休眠
+            </div>
+
+            <h3>💻 固件代码示例</h3>
+            <pre><code class="language-c">#include "ble_hids.h"
+
+// HID 服务句柄
+BLE_HIDS_DEF(m_hids, 1);
+
+// 鼠标输入报告
+static uint8_t m_mouse_report[MOUSE_REPORT_MAX_LEN];
+
+// 初始化 HID 服务
+void hids_mouse_init(void) {
+    uint32_t err_code;
+    
+    // HID 服务初始化配置
+    ble_hids_init_t hids_init = {0};
+    
+    // 配置报告映射
+    hids_init.rep_map.p_rep_map = (uint8_t *)report_descriptor;
+    hids_init.rep_map.rep_map_len = sizeof(report_descriptor);
+    
+    // 配置输入报告
+    ble_hids_inp_rep_t *p_inp_rep = &hids_init.inp_rep[0];
+    p_inp_rep->max_len = MOUSE_REPORT_MAX_LEN;
+    p_inp_rep->rep_ref.report_id = 1;
+    p_inp_rep->rep_ref.report_type = BLE_HIDS_INPUT_REP;
+    p_inp_rep->rep_ref.uuid = BLE_UUID_HID_REPORT_TYPE;
+    p_inp_rep->evt_handler = input_report_evt_handler;
+    p_inp_rep->security_mode.ccm.cps = 1;  // 需要加密
+    
+    hids_init.inp_rep_count = 1;
+    
+    // 配置 HID 信息
+    hids_init.hid_information.bcd_hid = 0x0111;  // HID 1.11
+    hids_init.hid_information.b_country_code = 0;
+    hids_init.hid_information.flags = 0x01;      // 远程唤醒
+    
+    // 初始化服务
+    err_code = ble_hids_init(&m_hids, &hids_init);
+    APP_ERROR_CHECK(err_code);
+}
+
+// 发送鼠标报告
+void mouse_send_report(int8_t x, int8_t y, uint8_t buttons) {
+    uint32_t err_code;
+    
+    m_mouse_report[0] = 0x01;  // Report ID
+    m_mouse_report[1] = buttons;
+    m_mouse_report[2] = x;
+    m_mouse_report[3] = y;
+    m_mouse_report[4] = 0;     // Wheel
+    
+    // 发送通知
+    err_code = ble_hids_inp_rep_send(&m_hids,
+                                      0,  // 输入报告索引
+                                      MOUSE_REPORT_MAX_LEN,
+                                      m_mouse_report,
+                                      m_conn_handle);
+    
+    if (err_code != NRF_SUCCESS) {
+        // 缓冲区满，稍后重试
+    }
+}
+
+// 按键扫描任务
+void mouse_scan_task(void) {
+    static uint8_t last_buttons = 0;
+    static int16_t last_x = 0, last_y = 0;
+    
+    // 读取传感器数据
+    int16_t delta_x, delta_y;
+    optical_sensor_read(&delta_x, &delta_y);
+    
+    // 读取按键状态
+    uint8_t buttons = read_buttons();
+    
+    // 有变化才发送 (降低功耗)
+    if (delta_x != 0 || delta_y != 0 || buttons != last_buttons) {
+        // 限制范围 (-127 ~ 127)
+        int8_t send_x = CLAMP(delta_x, -127, 127);
+        int8_t send_y = CLAMP(delta_y, -127, 127);
+        
+        mouse_send_report(send_x, send_y, buttons);
+        
+        last_buttons = buttons;
+        last_x = delta_x;
+        last_y = delta_y;
+        
+        // 重置活动定时器
+        activity_timer_restart();
+    }
+}</code></pre>
+
+            <h3>⚡ 低延迟优化</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>参数</th>
+                        <th>配置值</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>连接间隔</strong></td>
+                        <td>7.5ms - 11.25ms</td>
+                        <td>最低延迟 7.5ms</td>
+                    </tr>
+                    <tr>
+                        <td><strong>从机延迟</strong></td>
+                        <td>0</td>
+                        <td>不允许跳过事件</td>
+                    </tr>
+                    <tr>
+                        <td><strong>监督超时</strong></td>
+                        <td>500ms</td>
+                        <td>快速检测断开</td>
+                    </tr>
+                    <tr>
+                        <td><strong>MTU</strong></td>
+                        <td>23 bytes (默认)</td>
+                        <td>报告足够小</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PHY</strong></td>
+                        <td>2M PHY</td>
+                        <td>BLE 5.0+ 高速模式</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>🔐 配对与加密</h3>
+            <div class="mermaid">
+sequenceDiagram
+    participant Mouse as 鼠标
+    participant Host as 主机
+    
+    Note over Mouse,Host: 1. 进入配对模式
+    Mouse->>Mouse: 长按配对键 3s
+    Mouse->>Host: 广播 (可发现)
+    
+    Note over Mouse,Host: 2. 发起配对
+    Host->>Mouse: 连接请求
+    Host->>Mouse: 配对请求 (Just Works)
+    Mouse-->>Host: 配对响应
+    
+    Note over Mouse,Host: 3. 密钥交换
+    Mouse->>Host: 公钥交换
+    Host->>Mouse: 公钥
+    
+    Note over Mouse,Host: 4. 加密建立
+    Mouse->>Host: 加密请求
+    Host->>Mouse: 加密完成
+    Mouse->>Mouse: 存储 LTK
+    
+    Note over Mouse,Host: 5. 重连 (下次)
+    Mouse->>Host: 直接加密连接
+            </div>
+
+            <pre><code class="language-c">// 配对配置
+void ble_gap_sec_params_init(void) {
+    ble_gap_sec_params_t sec_params = {
+        .bond = 1,           // 允许绑定
+        .mitm = 0,           // 不需要 MITM 保护
+        .lesc = 0,           // 不使用 LE Secure Connections
+        .keypress = 0,       // 不支持按键确认
+        .io_caps = BLE_GAP_IO_CAPS_NONE,  // 无 IO 能力
+        .oob = 0,            // 无 OOB 数据
+        .min_key_size = 7,
+        .max_key_size = 16,
+        .kdist_own.enc = 1,  // 分发加密密钥
+        .kdist_own.id = 1,   // 分发身份密钥
+        .kdist_peer.enc = 1,
+        .kdist_peer.id = 1,
+    };
+    
+    sd_ble_gap_sec_params_reply(m_conn_handle, 
+                                 BLE_GAP_SEC_STATUS_SUCCESS, 
+                                 &sec_params, 
+                                 NULL);
+}</code></pre>
+
+            <h3>🔍 调试要点</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3>常见问题</h3>
+                    <ul>
+                        <li>光标跳动：检查传感器 DPI 设置</li>
+                        <li>延迟高：确认连接间隔 7.5ms</li>
+                        <li>配对失败：清除主机缓存</li>
+                        <li>唤醒慢：调整广播间隔</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>推荐工具</h3>
+                    <ul>
+                        <li>Wireshark: HCI 抓包分析</li>
+                        <li>nRF Sniffer: BLE 空口抓包</li>
+                        <li>BlueZ: Linux 调试</li>
+                        <li>Device Manager: Windows 查看</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            sequence: {
+                actorMargin: 50,
+                boxMargin: 10,
+                messageMargin: 40,
+                showSequenceNumbers: true
+            }
+        });
+    </script>
+</body>
+</html>

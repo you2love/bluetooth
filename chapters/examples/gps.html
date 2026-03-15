@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS 追踪器 - 蓝牙协议开发教程</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">📡</span>
+            <span class="sidebar-title">蓝牙开发</span>
+        </div>
+        <ul class="tree-nav">
+            <li><a href="../intro.html">蓝牙核心</a></li>
+            <li><a href="../protocol-stack.html">协议栈</a></li>
+            <li><a href="../connection.html">连接管理</a></li>
+            <li><a href="../data.html">GATT 传输</a></li>
+            <li><a href="../ble.html">BLE 开发</a></li>
+            <li>
+                <details open>
+                    <summary>实践案例</summary>
+                    <ul>
+                        <li><a href="index.html">案例概览</a></li>
+                        <li><a href="heart-rate.html">心率传感器</a></li>
+                        <li><a href="gps.html" class="active">GPS 追踪器</a></li>
+                        <li><a href="mouse.html">蓝牙鼠标</a></li>
+                        <li><a href="keyboard.html">蓝牙键盘</a></li>
+                        <li><a href="headset.html">蓝牙耳机</a></li>
+                    </ul>
+                </details>
+            </li>
+            <li><a href="../security.html">安全机制</a></li>
+            <li><a href="../troubleshooting.html">排错指南</a></li>
+            <li><a href="../comparison.html">技术对比</a></li>
+        </ul>
+    </nav>
+
+    <main class="main">
+        <section class="section">
+            <h2>🛰️ GPS 追踪器</h2>
+            <p class="lead">基于 BLE 的 GPS 位置追踪设备，支持实时位置上报和历史轨迹回放。</p>
+
+            <h3>📐 系统架构</h3>
+            <div class="mermaid">
+flowchart TB
+    subgraph GPS["GPS 追踪器"]
+        GNSS[GNSS 模块] --> MCU[BLE MCU]
+        MCU --> FLASH[Flash 存储]
+        MCU --> ANT[天线]
+    end
+    
+    subgraph Phone["手机 App"]
+        ANT2[天线] --> MCU2[手机 BLE]
+        MCU2 --> MAP[地图显示]
+        MCU2 --> DB[(本地数据库)]
+    end
+    
+    ANT -.->|BLE 连接 | ANT2
+    
+    style GPS fill:#e3f2fd,stroke:#007bff
+    style Phone fill:#d4edda,stroke:#28a745
+            </div>
+
+            <h3>📋 自定义 GATT 服务设计</h3>
+            <div class="mermaid">
+flowchart TB
+    subgraph Service["位置服务 (自定义 UUID)"]
+        LOC[位置特征值<br/>Notify/Indicate]
+        CFG[配置特征值<br/>Write/Read]
+        HIST[历史数据特征值<br/>Read]
+        BATT[电池特征值<br/>Read]
+    end
+    
+    LOC --> CCCD1[CCCD]
+    CFG --> CCCD2[CCCD]
+    
+    style Service fill:#e3f2fd,stroke:#007bff
+    style LOC fill:#fff3cd,stroke:#ffc107
+            </div>
+
+            <h3>📊 位置数据格式</h3>
+            <pre><code class="language-c">// 位置数据特征值数据格式 (20 bytes)
+typedef struct {
+    uint8_t  flags;           // 标志位
+    int32_t  latitude;        // 纬度 (1e-7 度)
+    int32_t  longitude;       // 经度 (1e-7 度)
+    int16_t  altitude;        // 海拔 (米)
+    uint8_t  speed;           // 速度 (km/h * 10)
+    uint8_t  satellites;      // 卫星数量
+    uint32_t timestamp;       // UTC 时间戳
+} gps_location_t;
+
+// 标志位定义
+#define GPS_FLAG_3D_FIX     0x01  // 3D 定位
+#define GPS_FLAG_MOTION     0x02  // 移动中
+#define GPS_FLAG_CHARGING   0x04  // 充电中
+#define GPS_FLAG_ALARM      0x08  // 报警状态
+
+// 示例：北京位置，海拔 50m，速度 36km/h，8 颗卫星
+uint8_t gps_data[] = {
+    0x03,                   // Flags: 3D fix + motion
+    0x00, 0xD9, 0x04, 0x19, // Latitude: 39.9042° N (0x1904D900 * 1e-7)
+    0x00, 0x7D, 0x39, 0x07, // Longitude: 116.4074° E
+    0x32, 0x00,             // Altitude: 50m
+    0x5A,                   // Speed: 36 km/h (90 = 9.0 m/s)
+    0x08,                   // Satellites: 8
+    0x00, 0x00, 0x00, 0x00  // Timestamp: UTC
+};</code></pre>
+
+            <h3>📈 完整工作流程</h3>
+            <div class="mermaid">
+sequenceDiagram
+    participant GPS as GPS 追踪器
+    participant Phone as 手机 App
+    
+    Note over GPS,Phone: 1. 广播阶段
+    GPS->>Phone: ADV_IND (位置服务 UUID)
+    
+    Note over GPS,Phone: 2. 连接阶段
+    Phone->>GPS: CONNECT_IND
+    GPS-->>Phone: 连接完成
+    
+    Note over GPS,Phone: 3. 服务发现
+    Phone->>GPS: 发现自定义服务
+    Phone->>GPS: 发现所有特征值
+    
+    Note over GPS,Phone: 4. 配置上报
+    Phone->>GPS: 写入配置 (间隔 1s)
+    Phone->>GPS: 启用位置通知
+    
+    Note over GPS,Phone: 5. 实时位置
+    loop 每秒
+        GPS->>Phone: 位置通知 (经纬度 + 时间戳)
+    end
+    
+    Note over GPS,Phone: 6. 历史轨迹 (可选)
+    Phone->>GPS: 读取历史数据
+    GPS-->>Phone: 批量位置数据
+    
+    Note over GPS,Phone: 7. 进入低功耗
+    Phone->>GPS: 断开连接
+    GPS->>GPS: 休眠 (GPS 模块关闭)
+            </div>
+
+            <h3>💻 固件代码示例</h3>
+            <pre><code class="language-c">#include "nrf_sdm.h"
+#include "nrf_sdh.h"
+#include "ble_gatts.h"
+
+// 自定义服务 UUID: 12345678-1234-5678-1234-56789ABCDEF0
+// 位置特征值 UUID: 12345678-1234-5678-1234-56789ABCDEF1
+
+static uint16_t m_service_handle;
+static ble_gatts_char_handles_t m_location_char;
+static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;
+
+// 初始化位置服务
+void gps_service_init(void) {
+    ble_uuid_t service_uuid = {
+        .uuid = 0x0001,
+        .type = m_uuid_type
+    };
+    
+    // 添加服务
+    sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, 
+                             &service_uuid, 
+                             &m_service_handle);
+    
+    // 配置位置特征值
+    ble_gatts_char_md_t char_md = {
+        .char_props.notify = 1,
+        .char_props.read = 1,
+        .char_props.write = 1,
+        .p_char_user_desc = "GPS Location",
+    };
+    
+    ble_uuid_t char_uuid = {
+        .uuid = 0x0001,
+        .type = m_uuid_type
+    };
+    
+    ble_attr_char_value_t char_val = {
+        .def_val = NULL,
+        .max_len = 20,
+    };
+    
+    sd_ble_gatts_characteristic_add(m_service_handle, 
+                                    &char_md, 
+                                    &char_attr, 
+                                    &m_location_char);
+}
+
+// 发送位置数据
+void send_location_data(gps_location_t *loc) {
+    ble_gatts_hvx_params_t hvx_params = {
+        .handle = m_location_char.value_handle,
+        .p_data = (uint8_t *)loc,
+        .p_len = &(uint16_t){sizeof(gps_location_t)},
+        .type = BLE_GATT_HVX_NOTIFICATION,
+    };
+    
+    sd_ble_gatts_hvx(m_conn_handle, &hvx_params);
+}
+
+// GPS 数据更新任务
+void gps_update_task(void) {
+    static gps_location_t location;
+    
+    // 从 GNSS 模块读取 NMEA 数据
+    if (gnss_has_fix()) {
+        nmea_data_t nmea = gnss_parse();
+        
+        // 转换为二进制格式
+        location.flags = GPS_FLAG_3D_FIX;
+        location.latitude = (int32_t)(nmea.latitude * 1e7);
+        location.longitude = (int32_t)(nmea.longitude * 1e7);
+        location.altitude = (int16_t)nmea.altitude;
+        location.speed = (uint8_t)(nmea.speed * 10);
+        location.satellites = nmea.satellites;
+        location.timestamp = nmea.timestamp;
+        
+        // 通过 BLE 发送
+        send_location_data(&location);
+        
+        // 存储到 Flash (用于历史轨迹)
+        flash_store_location(&location);
+    }
+}</code></pre>
+
+            <h3>📱 手机 App 代码示例</h3>
+            <pre><code class="language-kotlin">// Android - GPS 追踪器客户端
+class GPSTrackerClient(private val context: Context) {
+    
+    private var bluetoothGatt: BluetoothGatt? = null
+    private var locationCharacteristic: BluetoothGattCharacteristic? = null
+    private var configCharacteristic: BluetoothGattCharacteristic? = null
+    
+    // 自定义服务 UUID
+    companion object {
+        val GPS_SERVICE_UUID = UUID.fromString("12345678-1234-5678-1234-56789abcdef0")
+        val LOCATION_UUID = UUID.fromString("12345678-1234-5678-1234-56789abcdef1")
+        val CONFIG_UUID = UUID.fromString("12345678-1234-5678-1234-56789abcdef2")
+        val CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+    }
+    
+    // 解析位置数据
+    private fun parseLocation(data: ByteArray): Location {
+        val flags = data[0].toInt()
+        
+        val latitude = ((data[1].toInt() and 0xFF) or
+                       ((data[2].toInt() and 0xFF) shl 8) or
+                       ((data[3].toInt() and 0xFF) shl 16) or
+                       ((data[4].toInt() and 0xFF) shl 24)) * 1e-7
+        
+        val longitude = ((data[5].toInt() and 0xFF) or
+                        ((data[6].toInt() and 0xFF) shl 8) or
+                        ((data[7].toInt() and 0xFF) shl 16) or
+                        ((data[8].toInt() and 0xFF) shl 24)) * 1e-7
+        
+        val altitude = ((data[9].toInt() and 0xFF) or
+                       ((data[10].toInt() and 0xFF) shl 8)).toShort()
+        
+        val speed = (data[11].toInt() and 0xFF) / 10.0f
+        val satellites = data[12].toInt() and 0xFF
+        
+        return Location(latitude, longitude, altitude, speed, satellites)
+    }
+    
+    // 配置上报间隔
+    fun setUpdateInterval(seconds: Int) {
+        val config = byteArrayOf(
+            0x01,  // Command: Set interval
+            (seconds and 0xFF).toByte(),
+            ((seconds shr 8) and 0xFF).toByte()
+        )
+        configCharacteristic?.value = config
+        bluetoothGatt?.writeCharacteristic(configCharacteristic)
+    }
+    
+    // 读取历史轨迹
+    fun downloadHistory() {
+        val command = byteArrayOf(0x02)  // Command: Download history
+        configCharacteristic?.value = command
+        bluetoothGatt?.writeCharacteristic(configCharacteristic)
+    }
+}</code></pre>
+
+            <h3>⚡ 低功耗优化策略</h3>
+            <div class="mermaid">
+flowchart LR
+    A[上电] --> B[GPS 定位]
+    B --> C{定位成功？}
+    C -->|是 | D[BLE 广播]
+    C -->|否 | E[等待 30s]
+    E --> B
+    
+    D --> F{手机连接？}
+    F -->|是 | G[实时上报]
+    F -->|否 | H[存储数据]
+    
+    G --> I{断开连接？}
+    I -->|是 | J[关闭 GPS]
+    I -->|否 | G
+    
+    J --> K[深度休眠]
+    K --> L[定时唤醒]
+    L --> B
+    
+    style A fill:#28a745,color:#fff
+    style J fill:#ffc107,color:#000
+    style K fill:#dc3545,color:#fff
+            </div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>模式</th>
+                        <th>状态</th>
+                        <th>功耗</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>定位中</strong></td>
+                        <td>GPS 工作</td>
+                        <td>50-100mA</td>
+                        <td>搜索卫星信号</td>
+                    </tr>
+                    <tr>
+                        <td><strong>广播中</strong></td>
+                        <td>BLE 广播</td>
+                        <td>10-20mA</td>
+                        <td>等待手机连接</td>
+                    </tr>
+                    <tr>
+                        <td><strong>连接中</strong></td>
+                        <td>数据上报</td>
+                        <td>15-25mA</td>
+                        <td>实时位置推送</td>
+                    </tr>
+                    <tr>
+                        <td><strong>休眠</strong></td>
+                        <td>深度睡眠</td>
+                        <td>10-50μA</td>
+                        <td>定时唤醒定位</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>🔍 调试要点</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3>GPS 定位问题</h3>
+                    <ul>
+                        <li>室内无信号：需要室外测试</li>
+                        <li>冷启动慢：需要 30-60 秒</li>
+                        <li>热启动快：3-5 秒</li>
+                        <li>检查天线方向</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>BLE 连接问题</h3>
+                    <ul>
+                        <li>连接超时：调整 supervision timeout</li>
+                        <li>数据丢失：使用 Indicate 代替 Notify</li>
+                        <li>MTU 限制：协商更大 MTU</li>
+                        <li>干扰：避开 WiFi 信道</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            sequence: {
+                actorMargin: 50,
+                boxMargin: 10,
+                messageMargin: 40,
+                showSequenceNumbers: true
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蓝牙键盘 - 蓝牙协议开发教程</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">📡</span>
+            <span class="sidebar-title">蓝牙开发</span>
+        </div>
+        <ul class="tree-nav">
+            <li><a href="../intro.html">蓝牙核心</a></li>
+            <li><a href="../protocol-stack.html">协议栈</a></li>
+            <li><a href="../connection.html">连接管理</a></li>
+            <li><a href="../data.html">GATT 传输</a></li>
+            <li><a href="../ble.html">BLE 开发</a></li>
+            <li>
+                <details open>
+                    <summary>实践案例</summary>
+                    <ul>
+                        <li><a href="index.html">案例概览</a></li>
+                        <li><a href="heart-rate.html">心率传感器</a></li>
+                        <li><a href="gps.html">GPS 追踪器</a></li>
+                        <li><a href="mouse.html">蓝牙鼠标</a></li>
+                        <li><a href="keyboard.html" class="active">蓝牙键盘</a></li>
+                        <li><a href="headset.html">蓝牙耳机</a></li>
+                    </ul>
+                </details>
+            </li>
+            <li><a href="../security.html">安全机制</a></li>
+            <li><a href="../troubleshooting.html">排错指南</a></li>
+            <li><a href="../comparison.html">技术对比</a></li>
+        </ul>
+    </nav>
+
+    <main class="main">
+        <section class="section">
+            <h2>⌨️ 蓝牙键盘</h2>
+            <p class="lead">基于 HID over GATT Profile 的无线键盘，支持多设备切换和按键无冲。</p>
+
+            <h3>📐 键盘系统架构</h3>
+            <div class="mermaid">
+flowchart TB
+    subgraph Keyboard["蓝牙键盘"]
+        MATRIX[按键矩阵] --> SCAN[扫描电路]
+        SCAN --> MCU[BLE MCU]
+        MCU --> ANT[天线]
+        MCU --> LED[状态 LED]
+    end
+    
+    subgraph Host["主机设备"]
+        ANT2[天线] --> HOST[Host OS]
+        HOST --> HID[HID 驱动]
+        HID --> OS[操作系统]
+    end
+    
+    ANT -.->|BLE 连接 | ANT2
+    
+    style Keyboard fill:#e3f2fd,stroke:#007bff
+    style Host fill:#d4edda,stroke:#28a745
+            </div>
+
+            <h3>📋 HID 键盘报告格式</h3>
+            <pre><code class="language-c">// HID 键盘输入报告 (标准 8 键无冲)
+// Report ID: 0x01
+// 总长度：8 bytes
+
+typedef struct {
+    uint8_t  report_id;      // Report ID (0x01)
+    uint8_t  modifier;       // 修饰键 (Ctrl/Shift/Alt 等)
+    uint8_t  reserved;       // 保留
+    uint8_t  keycode[6];     // 按键码 (最多 6 键同时按下)
+} keyboard_input_report_t;
+
+// 修饰键位定义
+#define KB_MOD_LCTRL    0x01
+#define KB_MOD_LSHIFT   0x02
+#define KB_MOD_LALT     0x04
+#define KB_MOD_LGUI     0x08  // Windows/Command
+#define KB_MOD_RCTRL    0x10
+#define KB_MOD_RSHIFT   0x20
+#define KB_MOD_RALT     0x40
+#define KB_MOD_RGUI     0x80
+
+// 常用按键码 (Usage ID)
+#define KB_KEY_A        0x04
+#define KB_KEY_B        0x05
+#define KB_KEY_C        0x06
+#define KB_KEY_ENTER    0x28
+#define KB_KEY_ESCAPE   0x29
+#define KB_KEY_BACKSPACE 0x2A
+#define KB_KEY_TAB      0x2B
+#define KB_KEY_SPACE    0x2C
+#define KB_KEY_F1       0x3A
+#define KB_KEY_F12      0x45
+
+// 示例：按下 Ctrl+A (全选)
+uint8_t keyboard_report[] = {
+    0x01,                   // Report ID
+    KB_MOD_LCTRL,           // Modifier: Left Ctrl
+    0x00,                   // Reserved
+    KB_KEY_A, 0x00, 0x00,   // Keycode: A
+    0x00, 0x00
+};
+
+// 示例：按下 Shift+1 (感叹号)
+uint8_t keyboard_report_shift1[] = {
+    0x01,
+    KB_MOD_LSHIFT,          // Modifier: Left Shift
+    0x00,
+    0x1E, 0x00, 0x00,       // Keycode: 1
+    0x00, 0x00
+};</code></pre>
+
+            <h3>📊 HID 报告描述符</h3>
+            <pre><code class="language-c">// 键盘 HID 报告描述符
+const uint8_t keyboard_report_descriptor[] = {
+    0x05, 0x01,        // Usage Page (Desktop)
+    0x09, 0x06,        // Usage (Keyboard)
+    0xA1, 0x01,        // Collection (Application)
+    
+    0x85, 0x01,        //   Report ID (1)
+    
+    // 修饰键 (8 个)
+    0x05, 0x07,        //   Usage Page (Keyboard)
+    0x19, 0xE0,        //   Usage Minimum (224) - Left Ctrl
+    0x29, 0xE7,        //   Usage Maximum (231) - Right GUI
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x01,        //   Logical Maximum (1)
+    0x75, 0x01,        //   Report Size (1)
+    0x95, 0x08,        //   Report Count (8)
+    0x81, 0x02,        //   Input (Data, Var, Abs)
+    
+    // 保留字节
+    0x95, 0x01,        //   Report Count (1)
+    0x75, 0x08,        //   Report Size (8)
+    0x81, 0x01,        //   Input (Cnst)
+    
+    // LED 输出 (5 个：NumLock/CapsLock/ScrollLock/Compose/Kana)
+    0x05, 0x08,        //   Usage Page (LED)
+    0x19, 0x01,        //   Usage Minimum (1)
+    0x29, 0x05,        //   Usage Maximum (5)
+    0x95, 0x05,        //   Report Count (5)
+    0x75, 0x01,        //   Report Size (1)
+    0x91, 0x02,        //   Output (Data, Var, Abs)
+    
+    // LED 填充
+    0x95, 0x01,        //   Report Count (1)
+    0x75, 0x03,        //   Report Size (3)
+    0x91, 0x01,        //   Output (Cnst)
+    
+    // 按键 (6 键无冲)
+    0x95, 0x06,        //   Report Count (6)
+    0x75, 0x08,        //   Report Size (8)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x65,        //   Logical Maximum (101)
+    0x05, 0x07,        //   Usage Page (Keyboard)
+    0x19, 0x00,        //   Usage Minimum (0)
+    0x29, 0x65,        //   Usage Maximum (101)
+    0x81, 0x00,        //   Input (Data, Arr, Abs)
+    
+    0xC0               // End Collection
+};
+
+// LED 定义
+#define LED_NUM_LOCK    0x01
+#define LED_CAPS_LOCK   0x02
+#define LED_SCROLL_LOCK 0x04
+#define LED_COMPOSE     0x08
+#define LED_KANA        0x10</code></pre>
+
+            <h3>📈 完整工作流程</h3>
+            <div class="mermaid">
+sequenceDiagram
+    participant KB as 蓝牙键盘
+    participant Host as 主机
+    
+    Note over KB,Host: 1. 配对模式
+    KB->>KB: 长按配对键
+    KB->>Host: ADV_IND (键盘)
+    
+    Note over KB,Host: 2. 连接配对
+    Host->>KB: CONNECT_IND
+    Host->>KB: 配对请求
+    KB-->>Host: 确认配对
+    
+    Note over KB,Host: 3. 服务发现
+    Host->>KB: 发现 HID 服务
+    Host->>KB: 读取报告描述符
+    
+    Note over KB,Host: 4. 启用通知
+    Host->>KB: 写入 CCCD
+    
+    Note over KB,Host: 5. 按键输入
+    loop 按键事件
+        KB->>Host: 按下通知
+        KB->>Host: 释放通知 (全 0)
+    end
+    
+    Note over KB,Host: 6. LED 控制
+    Host->>KB: 输出报告 (CapsLock)
+    KB->>KB: 点亮 LED
+    
+    Note over KB,Host: 7. 低功耗
+    KB->>KB: 无操作 10s
+    KB->>Host: 进入休眠
+            </div>
+
+            <h3>💻 固件代码示例</h3>
+            <pre><code class="language-c">#include "ble_hids.h"
+
+// HID 服务句柄
+BLE_HIDS_DEF(m_hids, 1);
+
+// 键盘报告缓冲区
+static uint8_t m_kb_report[8];
+static uint8_t m_last_keys[6] = {0};
+
+// 初始化键盘 HID 服务
+void keyboard_hids_init(void) {
+    ble_hids_init_t hids_init = {0};
+    
+    // 配置报告映射
+    hids_init.rep_map.p_rep_map = (uint8_t *)keyboard_report_descriptor;
+    hids_init.rep_map.rep_map_len = sizeof(keyboard_report_descriptor);
+    
+    // 配置输入报告
+    ble_hids_inp_rep_t *p_inp_rep = &hids_init.inp_rep[0];
+    p_inp_rep->max_len = 8;
+    p_inp_rep->rep_ref.report_id = 1;
+    p_inp_rep->rep_ref.report_type = BLE_HIDS_INPUT_REP;
+    p_inp_rep->evt_handler = kb_input_evt_handler;
+    
+    // 配置输出报告 (LED 控制)
+    ble_hids_outp_rep_t *p_outp_rep = &hids_init.outp_rep[0];
+    p_outp_rep->max_len = 1;
+    p_outp_rep->rep_ref.report_id = 1;
+    p_outp_rep->rep_ref.report_type = BLE_HIDS_OUTPUT_REP;
+    p_outp_rep->evt_handler = kb_output_evt_handler;
+    p_outp_rep->security_mode.ccm.cps = 1;
+    
+    hids_init.inp_rep_count = 1;
+    hids_init.outp_rep_count = 1;
+    
+    // HID 信息
+    hids_init.hid_information.bcd_hid = 0x0111;
+    hids_init.hid_information.b_country_code = 0;
+    hids_init.hid_information.flags = 0x01;  // 远程唤醒
+    
+    ble_hids_init(&m_hids, &hids_init);
+}
+
+// 发送按键报告
+void keyboard_send_keys(uint8_t modifier, uint8_t *keys, uint8_t count) {
+    m_kb_report[0] = 0x01;      // Report ID
+    m_kb_report[1] = modifier;  // Modifier
+    m_kb_report[2] = 0x00;      // Reserved
+    
+    // 填充按键 (最多 6 个)
+    for (int i = 0; i < 6; i++) {
+        m_kb_report[3 + i] = (i < count) ? keys[i] : 0x00;
+    }
+    
+    // 发送输入报告
+    ble_hids_inp_rep_send(&m_hids, 0, 8, m_kb_report, m_conn_handle);
+}
+
+// 按键按下
+void key_press(uint8_t keycode) {
+    uint8_t keys[6] = {0};
+    uint8_t count = 0;
+    
+    // 查找空位
+    for (int i = 0; i < 6; i++) {
+        if (m_last_keys[i] == keycode) {
+            return;  // 已按下，忽略
+        }
+        if (m_last_keys[i] == 0x00) {
+            m_last_keys[i] = keycode;
+            count = i + 1;
+            break;
+        }
+    }
+    
+    // 构建报告
+    memcpy(keys, m_last_keys, 6);
+    keyboard_send_keys(0, keys, count);
+}
+
+// 按键释放
+void key_release(uint8_t keycode) {
+    // 从数组中移除
+    for (int i = 0; i < 6; i++) {
+        if (m_last_keys[i] == keycode) {
+            m_last_keys[i] = 0x00;
+        }
+    }
+    
+    // 发送空报告或剩余按键
+    keyboard_send_keys(0, m_last_keys, 6);
+}
+
+// LED 输出报告处理
+void kb_output_evt_handler(ble_hids_t * p_hids, 
+                           ble_hids_evt_t * p_evt) {
+    if (p_evt->evt_type == BLE_HIDS_EVT_OUTP_REP_WRITE) {
+        uint8_t led_state = p_evt->params.outp_rep.data[0];
+        
+        // 控制 LED
+        if (led_state & LED_CAPS_LOCK) {
+            led_on(CAPS_LOCK_LED);
+        } else {
+            led_off(CAPS_LOCK_LED);
+        }
+        
+        if (led_state & LED_NUM_LOCK) {
+            led_on(NUM_LOCK_LED);
+        } else {
+            led_off(NUM_LOCK_LED);
+        }
+    }
+}</code></pre>
+
+            <h3>⌨️ 多设备切换</h3>
+            <div class="mermaid">
+flowchart TB
+    subgraph Profiles["配对配置文件"]
+        P1[设备 1<br/>PC]
+        P2[设备 2<br/>手机]
+        P3[设备 3<br/>平板]
+    end
+    
+    SWITCH[切换按键] --> SELECT{选择设备}
+    SELECT -->|Fn+1| P1
+    SELECT -->|Fn+2| P2
+    SELECT -->|Fn+3| P3
+    
+    P1 --> CONNECT1[连接设备 1]
+    P2 --> CONNECT2[连接设备 2]
+    P3 --> CONNECT3[连接设备 3]
+    
+    style Profiles fill:#e3f2fd,stroke:#007bff
+    style SWITCH fill:#ffc107,color:#000
+            </div>
+
+            <pre><code class="language-c">// 多设备切换实现
+typedef struct {
+    ble_gap_addr_t addr;      // 设备地址
+    ble_gap_irk_t  irk;       // 身份解析密钥
+    bool           bonded;    // 已配对
+} device_profile_t;
+
+// 存储 3 个设备配置
+static device_profile_t m_profiles[3];
+static uint8_t m_current_device = 0;
+
+// 切换设备
+void switch_device(uint8_t index) {
+    if (index >= 3) return;
+    
+    // 断开当前连接
+    sd_ble_gap_disconnect(m_conn_handle, 
+                          BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+    
+    // 更新当前设备
+    m_current_device = index;
+    
+    // 使用对应设备的密钥广播
+    if (m_profiles[index].bonded) {
+        // 已配对，直接连接
+        sd_ble_gap_connect(&m_profiles[index].addr, 
+                           &m_scan_params,
+                           &m_conn_params,
+                           NULL);
+    } else {
+        // 未配对，进入广播模式
+        start_advertising();
+    }
+    
+    // 更新 LED 指示
+    update_led_indicator(index);
+}</code></pre>
+
+            <h3>⚡ 功耗优化</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>参数</th>
+                        <th>配置值</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>连接间隔</strong></td>
+                        <td>20ms - 50ms</td>
+                        <td>键盘不需要超低延迟</td>
+                    </tr>
+                    <tr>
+                        <td><strong>从机延迟</strong></td>
+                        <td>4-9</td>
+                        <td>允许跳过事件</td>
+                    </tr>
+                    <tr>
+                        <td><strong>监督超时</strong></td>
+                        <td>2s</td>
+                        <td>平衡功耗与响应</td>
+                    </tr>
+                    <tr>
+                        <td><strong>广播间隔</strong></td>
+                        <td>30-60ms</td>
+                        <td>快速重连</td>
+                    </tr>
+                    <tr>
+                        <td><strong>休眠电流</strong></td>
+                        <td>&lt;5μA</td>
+                        <td>深度睡眠</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>🔍 调试要点</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3>常见问题</h3>
+                    <ul>
+                        <li>按键重复：去抖时间不足</li>
+                        <li>多键无冲：检查报告格式</li>
+                        <li>LED 不亮：输出报告未启用</li>
+                        <li>切换失败：清除配对信息</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>推荐工具</h3>
+                    <ul>
+                        <li>Device Manager: Windows 查看</li>
+                        <li>Bluetooth Explorer: macOS 调试</li>
+                        <li>nRF Sniffer: 空口抓包</li>
+                        <li>Keyboard Tester: 在线测试</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            sequence: {
+                actorMargin: 50,
+                boxMargin: 10,
+                messageMargin: 40,
+                showSequenceNumbers: true
+            }
+        });
+    </script>
+</body>
+</html>

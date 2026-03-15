@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心率传感器 - 蓝牙协议开发教程</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">📡</span>
+            <span class="sidebar-title">蓝牙开发</span>
+        </div>
+        <ul class="tree-nav">
+            <li><a href="../intro.html">蓝牙核心</a></li>
+            <li><a href="../protocol-stack.html">协议栈</a></li>
+            <li><a href="../connection.html">连接管理</a></li>
+            <li><a href="../data.html">GATT 传输</a></li>
+            <li><a href="../ble.html">BLE 开发</a></li>
+            <li>
+                <details open>
+                    <summary>实践案例</summary>
+                    <ul>
+                        <li><a href="index.html">案例概览</a></li>
+                        <li><a href="heart-rate.html" class="active">心率传感器</a></li>
+                        <li><a href="gps.html">GPS 追踪器</a></li>
+                        <li><a href="mouse.html">蓝牙鼠标</a></li>
+                        <li><a href="keyboard.html">蓝牙键盘</a></li>
+                        <li><a href="headset.html">蓝牙耳机</a></li>
+                    </ul>
+                </details>
+            </li>
+            <li><a href="../security.html">安全机制</a></li>
+            <li><a href="../troubleshooting.html">排错指南</a></li>
+            <li><a href="../comparison.html">技术对比</a></li>
+        </ul>
+    </nav>
+
+    <main class="main">
+        <section class="section">
+            <h2>❤️ 心率传感器 (HRM)</h2>
+            <p class="lead">基于 BLE HRM Profile 的心率监测设备，实时上报心率和 RR 间期数据。</p>
+
+            <h3>📐 系统架构</h3>
+            <div class="mermaid">
+flowchart TB
+    subgraph Sensor["心率传感器"]
+        HR[心率检测模块] --> MCU[BLE MCU]
+        MCU --> ANT[天线]
+    end
+    
+    subgraph Phone["手机 App"]
+        ANT2[天线] --> MCU2[手机 BLE]
+        MCU2 --> APP[健身 App]
+    end
+    
+    ANT -.->|BLE 广播/连接 | ANT2
+    
+    style Sensor fill:#e3f2fd,stroke:#007bff
+    style Phone fill:#d4edda,stroke:#28a745
+            </div>
+
+            <h3>📋 HRM Profile 结构</h3>
+            <div class="mermaid">
+flowchart TB
+    subgraph HRM["心率服务 0x180D"]
+        HRM_Char[心率测量特征值 0x2A37]
+        HRM_CCCD[CCCD 0x2902]
+        BODY[身体位置特征值 0x2A38]
+        CTRL[控制点特征值 0x2A39]
+    end
+    
+    HRM_Char --> HRM_CCCD
+    
+    subgraph Data["数据格式"]
+        Flags[标志位 1B]
+        BPM[心率值 1B]
+        Energy[能量消耗 2B]
+        RR[RR 间期 2B*N]
+    end
+    
+    style HRM fill:#e3f2fd,stroke:#007bff
+    style Data fill:#fff3cd,stroke:#ffc107
+            </div>
+
+            <h3>📊 心率测量数据格式</h3>
+            <pre><code class="language-c">// 心率测量特征值 (0x2A37) 数据格式
+// 启用 Notify 后，传感器主动推送数据
+
+typedef struct {
+    uint8_t  flags;           // 标志位
+    uint8_t  heart_rate;      // 心率值 (BPM)
+    uint16_t energy_expended; // 能量消耗 (kJ) - 可选
+    uint16_t rr_interval[];   // RR 间期 (1/1024 秒) - 可选
+} heart_rate_measurement_t;
+
+// 标志位定义
+#define HRM_FLAG_HR_16BIT       0x01  // 0: 8bit, 1: 16bit
+#define HRM_FLAG_CONTACT_DET    0x02  // 接触检测
+#define HRM_FLAG_CONTACT_STAT   0x04  // 接触状态
+#define HRM_FLAG_ENERGY_EXP     0x08  // 能量消耗存在
+#define HRM_FLAG_RR_INTERVAL    0x10  // RR 间期存在
+
+// 示例数据：正常心率 72 BPM，有 RR 间期
+uint8_t hrm_data[] = {
+    0x16,       // Flags: RR 间期存在
+    0x48,       // Heart Rate: 72 BPM
+    0x00, 0x04, // RR Interval 1: 1024 * 0.0039 = 4ms (正常)
+    0x00, 0x04  // RR Interval 2: 4ms
+};</code></pre>
+
+            <h3>📈 完整工作流程</h3>
+            <div class="mermaid">
+sequenceDiagram
+    participant HRM as 心率传感器
+    participant Phone as 手机 App
+    
+    Note over HRM,Phone: 1. 广播阶段
+    HRM->>Phone: ADV_IND (HRM Service 0x180D)
+    
+    Note over HRM,Phone: 2. 连接阶段
+    Phone->>HRM: CONNECT_IND
+    HRM-->>Phone: 连接完成
+    
+    Note over HRM,Phone: 3. 服务发现
+    Phone->>HRM: 发现服务 0x180D
+    Phone->>HRM: 发现特征值 0x2A37
+    
+    Note over HRM,Phone: 4. 启用通知
+    Phone->>HRM: Write CCCD (0x0001)
+    HRM-->>Phone: Write Response
+    
+    Note over HRM,Phone: 5. 数据推送
+    loop 每秒
+        HRM->>Phone: Handle Value Notification (心率 72)
+    end
+    
+    Note over HRM,Phone: 6. 断开连接
+    Phone->>HRM: 断开连接
+            </div>
+
+            <h3>💻 固件代码示例</h3>
+            <pre><code class="language-c">#include "nrf_sdm.h"
+#include "nrf_sdh.h"
+#include "nrf_sdh_ble.h"
+#include "ble_hrs.h"
+
+// 心率服务句柄
+BLE_HRS_DEF(m_hrs);
+
+// 心率测量数据
+static uint8_t heart_rate = 72;
+
+// 初始化心率服务
+void hrs_init(void) {
+    ble_hrs_init_t hrs_init_struct = {0};
+    
+    // 配置心率测量特征值
+    hrs_init_struct.evt_handler = hrs_evt_handler;
+    hrs_init_struct.supported_body_locations = BLE_HRS_BODY_LOCATION_CHEST;
+    
+    // 添加 RR 间期支持
+    hrs_init_struct.qr_code_supported = false;
+    
+    // 初始化服务
+    ble_hrs_init(&m_hrs, &hrs_init_struct);
+}
+
+// 心率服务事件处理
+void hrs_evt_handler(ble_hrs_t * p_hrs, ble_hrs_evt_t * p_evt) {
+    switch (p_evt->evt_type) {
+        case BLE_HRS_EVT_CCCD_ENABLED:
+            // 客户端启用了通知
+            start_heart_rate_measurement();
+            break;
+        case BLE_HRS_EVT_CCCD_DISABLED:
+            // 客户端禁用了通知
+            stop_heart_rate_measurement();
+            break;
+        default:
+            break;
+    }
+}
+
+// 测量并上报心率
+void update_heart_rate(uint8_t bpm) {
+    uint8_t hrm_data[BLE_HRS_MAX_DATA_LEN];
+    uint16_t hrm_len = 0;
+    
+    // 构建心率数据
+    hrm_data[hrm_len++] = 0x00;  // Flags: 8bit HR, no RR
+    hrm_data[hrm_len++] = bpm;   // Heart rate value
+    
+    // 发送通知
+    ble_hrs_heart_rate_measurement_send(&m_hrs, hrm_data, hrm_len);
+}
+
+// 带 RR 间期的心率上报
+void update_heart_rate_with_rr(uint8_t bpm, uint16_t *rr_intervals, uint8_t count) {
+    uint8_t hrm_data[BLE_HRS_MAX_DATA_LEN];
+    uint16_t hrm_len = 0;
+    
+    // Flags: 8bit HR + RR intervals present
+    hrm_data[hrm_len++] = 0x10;
+    hrm_data[hrm_len++] = bpm;
+    
+    // 添加 RR 间期
+    for (int i = 0; i < count; i++) {
+        hrm_data[hrm_len++] = rr_intervals[i] & 0xFF;
+        hrm_data[hrm_len++] = (rr_intervals[i] >> 8) & 0xFF;
+    }
+    
+    ble_hrs_heart_rate_measurement_send(&m_hrs, hrm_data, hrm_len);
+}</code></pre>
+
+            <h3>📱 手机 App 代码示例</h3>
+            <pre><code class="language-kotlin">// Android - 连接心率传感器
+class HeartRateMonitor(private val context: Context) {
+    
+    private var bluetoothGatt: BluetoothGatt? = null
+    private var heartRateCharacteristic: BluetoothGattCharacteristic? = null
+    
+    // HRM Service 和 Characteristic UUID
+    companion object {
+        val HRM_SERVICE_UUID = UUID.fromString("0000180d-0000-1000-8000-00805f9b34fb")
+        val HRM_MEASUREMENT_UUID = UUID.fromString("00002a37-0000-1000-8000-00805f9b34fb")
+        val CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+    }
+    
+    // 连接设备
+    fun connect(address: String) {
+        val device = bluetoothAdapter.getRemoteDevice(address)
+        bluetoothGatt = device.connectGatt(context, false, gattCallback)
+    }
+    
+    private val gattCallback = object : BluetoothGattCallback() {
+        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                // 发现 HRM 服务
+                val hmsService = gatt.getService(HRM_SERVICE_UUID)
+                heartRateCharacteristic = hmsService?.getCharacteristic(HRM_MEASUREMENT_UUID)
+                
+                // 启用通知
+                enableHeartRateNotification()
+            }
+        }
+        
+        override fun onCharacteristicChanged(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic
+        ) {
+            if (characteristic.uuid == HRM_MEASUREMENT_UUID) {
+                parseHeartRate(characteristic.value)
+            }
+        }
+    }
+    
+    // 启用通知
+    private fun enableHeartRateNotification() {
+        bluetoothGatt?.setCharacteristicNotification(heartRateCharacteristic, true)
+        
+        val cccd = heartRateCharacteristic?.getDescriptor(CCCD_UUID)
+        cccd?.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+        bluetoothGatt?.writeDescriptor(cccd)
+    }
+    
+    // 解析心率数据
+    private fun parseHeartRate(data: ByteArray) {
+        val flags = data[0].toInt()
+        val hrFormat = flags and 0x01
+        
+        val heartRate = if (hrFormat == 0) {
+            data[1].toInt() and 0xFF  // 8-bit
+        } else {
+            ((data[1].toInt() and 0xFF) or ((data[2].toInt() and 0xFF) shl 8))  // 16-bit
+        }
+        
+        Log.d("HRM", "心率：$heartRate BPM")
+        
+        // 检查是否有 RR 间期
+        if (flags and 0x10 != 0) {
+            parseRRIntervals(data, hrFormat)
+        }
+    }
+}</code></pre>
+
+            <h3>🔍 广播数据配置</h3>
+            <pre><code class="language-c">// 广播数据：让手机快速识别 HRM 设备
+// 在广播中包含 HRM Service UUID
+
+uint8_t adv_data[] = {
+    // Flags
+    0x02, 0x01, 0x06,
+    
+    // 16-bit Service UUIDs (HRM Service)
+    0x03, 0x03, 0x0D, 0x18,  // 0x180D = Heart Rate
+    
+    // 设备名称
+    0x0A, 0x09, 'H', 'R', 'M', '-', 'D', 'e', 'v', 'i', 'c', 'e'
+};
+
+// 扫描响应数据
+uint8_t scan_rsp[] = {
+    // 完整设备名称
+    0x0A, 0x09, 'H', 'R', 'M', '-', 'D', 'e', 'v', 'i', 'c', 'e',
+    
+    // 外观 (Appearance): 心率带
+    0x03, 0x19, 0x03, 0x04  // 0x0403 = Heart Rate Sensor
+};</code></pre>
+
+            <h3>⚡ 功耗优化技巧</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>优化项</th>
+                        <th>配置</th>
+                        <th>效果</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>连接间隔</strong></td>
+                        <td>100-500ms</td>
+                        <td>降低通信频率</td>
+                    </tr>
+                    <tr>
+                        <td><strong>从机延迟</strong></td>
+                        <td>0-4</td>
+                        <td>允许跳过事件</td>
+                    </tr>
+                    <tr>
+                        <td><strong>广播间隔</strong></td>
+                        <td>500-1000ms</td>
+                        <td>降低待机电流</td>
+                    </tr>
+                    <tr>
+                        <td><strong>传感器采样</strong></td>
+                        <td>按需唤醒</td>
+                        <td>仅在连接时测量</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RR 间期上报</strong></td>
+                        <td>批量发送</td>
+                        <td>减少数据包数量</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>🛠️ 调试要点</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3>常见问题</h3>
+                    <ul>
+                        <li>通知未启用：检查 CCCD 写入</li>
+                        <li>数据解析错误：确认标志位</li>
+                        <li>连接不稳定：调整连接参数</li>
+                        <li>功耗过高：优化广播间隔</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>推荐工具</h3>
+                    <ul>
+                        <li>nRF Connect: 查看服务/特征值</li>
+                        <li>Heart Rate Simulator: 模拟 HRM 设备</li>
+                        <li>Wireshark: 空口抓包分析</li>
+                        <li>Segger RTT: 固件日志输出</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            sequence: {
+                actorMargin: 50,
+                boxMargin: 10,
+                messageMargin: 40,
+                showSequenceNumbers: true
+            }
+        });
+    </script>
+</body>
+</html>

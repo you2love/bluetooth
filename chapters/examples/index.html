@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实践案例 - 蓝牙协议开发教程</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">📡</span>
+            <span class="sidebar-title">蓝牙开发</span>
+        </div>
+        <ul class="tree-nav">
+            <li><a href="../intro.html">蓝牙核心</a></li>
+            <li><a href="../protocol-stack.html">协议栈</a></li>
+            <li><a href="../connection.html">连接管理</a></li>
+            <li><a href="../data.html">GATT 传输</a></li>
+            <li><a href="../ble.html">BLE 开发</a></li>
+            <li>
+                <details>
+                    <summary>实践案例</summary>
+                    <ul>
+                        <li><a href="index.html" class="active">案例概览</a></li>
+                        <li><a href="heart-rate.html">心率传感器</a></li>
+                        <li><a href="gps.html">GPS 追踪器</a></li>
+                        <li><a href="mouse.html">蓝牙鼠标</a></li>
+                        <li><a href="keyboard.html">蓝牙键盘</a></li>
+                        <li><a href="headset.html">蓝牙耳机</a></li>
+                    </ul>
+                </details>
+            </li>
+            <li><a href="../security.html">安全机制</a></li>
+            <li><a href="../troubleshooting.html">排错指南</a></li>
+            <li><a href="../comparison.html">技术对比</a></li>
+        </ul>
+    </nav>
+
+    <main class="main">
+        <section class="section">
+            <h2>实践案例</h2>
+            <p class="lead">通过真实设备案例，深入理解蓝牙协议在实际产品中的应用。</p>
+
+            <h3>📱 案例列表</h3>
+            <div class="chapter-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin-top: 24px;">
+                <a href="heart-rate.html" class="chapter-card" style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-decoration: none; color: inherit; display: block; transition: all 0.3s ease;">
+                    <div class="chapter-icon" style="font-size: 32px; margin-bottom: 12px;">❤️</div>
+                    <h3 style="color: var(--primary-dark); margin: 0 0 12px; font-size: 1.3rem;">心率传感器</h3>
+                    <p style="color: var(--text-light); font-size: 14px; margin-bottom: 0;">HRM Profile、Notify 通知、RR 间期测量</p>
+                </a>
+
+                <a href="gps.html" class="chapter-card" style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-decoration: none; color: inherit; display: block; transition: all 0.3s ease;">
+                    <div class="chapter-icon" style="font-size: 32px; margin-bottom: 12px;">🛰️</div>
+                    <h3 style="color: var(--primary-dark); margin: 0 0 12px; font-size: 1.3rem;">GPS 追踪器</h3>
+                    <p style="color: var(--text-light); font-size: 14px; margin-bottom: 0;">位置服务、批量数据传输、低功耗优化</p>
+                </a>
+
+                <a href="mouse.html" class="chapter-card" style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-decoration: none; color: inherit; display: block; transition: all 0.3s ease;">
+                    <div class="chapter-icon" style="font-size: 32px; margin-bottom: 12px;">🖱️</div>
+                    <h3 style="color: var(--primary-dark); margin: 0 0 12px; font-size: 1.3rem;">蓝牙鼠标</h3>
+                    <p style="color: var(--text-light); font-size: 14px; margin-bottom: 0;">HID Profile、低延迟连接、唤醒配对</p>
+                </a>
+
+                <a href="keyboard.html" class="chapter-card" style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-decoration: none; color: inherit; display: block; transition: all 0.3s ease;">
+                    <div class="chapter-icon" style="font-size: 32px; margin-bottom: 12px;">⌨️</div>
+                    <h3 style="color: var(--primary-dark); margin: 0 0 12px; font-size: 1.3rem;">蓝牙键盘</h3>
+                    <p style="color: var(--text-light); font-size: 14px; margin-bottom: 0;">HID Profile、多设备切换、按键扫描</p>
+                </a>
+
+                <a href="headset.html" class="chapter-card" style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-decoration: none; color: inherit; display: block; transition: all 0.3s ease;">
+                    <div class="chapter-icon" style="font-size: 32px; margin-bottom: 12px;">🎧</div>
+                    <h3 style="color: var(--primary-dark); margin: 0 0 12px; font-size: 1.3rem;">蓝牙耳机</h3>
+                    <p style="color: var(--text-light); font-size: 14px; margin-bottom: 0;">A2DP/HFP Profile、经典蓝牙、音频编码</p>
+                </a>
+            </div>
+
+            <h3>🔍 技术对比</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>设备类型</th>
+                        <th>蓝牙类型</th>
+                        <th>Profile</th>
+                        <th>连接间隔</th>
+                        <th>功耗</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>心率传感器</strong></td>
+                        <td>BLE</td>
+                        <td>HRM (0x180D)</td>
+                        <td>100-500ms</td>
+                        <td>极低</td>
+                    </tr>
+                    <tr>
+                        <td><strong>GPS 追踪器</strong></td>
+                        <td>BLE</td>
+                        <td>自定义 GATT</td>
+                        <td>1-10s</td>
+                        <td>低</td>
+                    </tr>
+                    <tr>
+                        <td><strong>蓝牙鼠标</strong></td>
+                        <td>BLE</td>
+                        <td>HID over GATT</td>
+                        <td>7.5-20ms</td>
+                        <td>低</td>
+                    </tr>
+                    <tr>
+                        <td><strong>蓝牙键盘</strong></td>
+                        <td>BLE</td>
+                        <td>HID over GATT</td>
+                        <td>20-50ms</td>
+                        <td>低</td>
+                    </tr>
+                    <tr>
+                        <td><strong>蓝牙耳机</strong></td>
+                        <td>经典蓝牙</td>
+                        <td>A2DP + HFP</td>
+                        <td>连续</td>
+                        <td>高</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default'
+        });
+    </script>
+</body>
+</html>

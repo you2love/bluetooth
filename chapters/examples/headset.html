@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蓝牙耳机 - 蓝牙协议开发教程</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">📡</span>
+            <span class="sidebar-title">蓝牙开发</span>
+        </div>
+        <ul class="tree-nav">
+            <li><a href="../intro.html">蓝牙核心</a></li>
+            <li><a href="../protocol-stack.html">协议栈</a></li>
+            <li><a href="../connection.html">连接管理</a></li>
+            <li><a href="../data.html">GATT 传输</a></li>
+            <li><a href="../ble.html">BLE 开发</a></li>
+            <li>
+                <details open>
+                    <summary>实践案例</summary>
+                    <ul>
+                        <li><a href="index.html">案例概览</a></li>
+                        <li><a href="heart-rate.html">心率传感器</a></li>
+                        <li><a href="gps.html">GPS 追踪器</a></li>
+                        <li><a href="mouse.html">蓝牙鼠标</a></li>
+                        <li><a href="keyboard.html">蓝牙键盘</a></li>
+                        <li><a href="headset.html" class="active">蓝牙耳机</a></li>
+                    </ul>
+                </details>
+            </li>
+            <li><a href="../security.html">安全机制</a></li>
+            <li><a href="../troubleshooting.html">排错指南</a></li>
+            <li><a href="../comparison.html">技术对比</a></li>
+        </ul>
+    </nav>
+
+    <main class="main">
+        <section class="section">
+            <h2>🎧 蓝牙耳机</h2>
+            <p class="lead">基于经典蓝牙 A2DP + HFP Profile 的音频设备，支持立体声音乐和通话功能。</p>
+
+            <h3>📐 系统架构</h3>
+            <div class="mermaid">
+flowchart TB
+    subgraph Headset["蓝牙耳机"]
+        MIC[麦克风] --> CODEC[音频 Codec]
+        CODEC --> BT[BLE+ 经典双模芯片]
+        BT --> ANT[天线]
+        BT --> AMP[功放]
+        AMP --> SPK[扬声器]
+    end
+    
+    subgraph Phone["手机"]
+        APP[音乐 App] --> AUDIO[音频系统]
+        AUDIO --> BT2[BLE+ 经典双模芯片]
+        BT2 --> ANT2[天线]
+    end
+    
+    ANT <-->|A2DP 音频流 | ANT2
+    ANT <-->|HFP 通话 | ANT2
+    ANT -.->|BLE 控制 | ANT2
+    
+    style Headset fill:#e3f2fd,stroke:#007bff
+    style Phone fill:#d4edda,stroke:#28a745
+            </div>
+
+            <h3>📋 蓝牙音频 Profile</h3>
+            <div class="mermaid">
+flowchart TB
+    subgraph Classic["经典蓝牙 Profile"]
+        A2DP["A2DP<br/>音频传输"]
+        AVRCP["AVRCP<br/>远程控制"]
+        HFP["HFP/HSP<br/>免提通话"]
+    end
+    
+    subgraph BLE["低功耗蓝牙"]
+        BATTERY["电池服务"]
+        FINDME["查找耳机"]
+        FWUPD["固件升级"]
+    end
+    
+    A2DP --> CODEC1{音频编码}
+    CODEC1 --> SBC[SBC]
+    CODEC1 --> AAC[AAC]
+    CODEC1 --> APTX[aptX]
+    CODEC1 --> LDAC[LDAC]
+    
+    style Classic fill:#fff3cd,stroke:#ffc107
+    style BLE fill:#e3f2fd,stroke:#007bff
+            </div>
+
+            <h3>📊 A2DP 音频传输流程</h3>
+            <div class="mermaid">
+sequenceDiagram
+    participant Phone as 手机
+    participant Headset as 蓝牙耳机
+    
+    Note over Phone,Headset: 1. 经典蓝牙连接
+    Phone->>Headset: Inquiry/Page
+    Headset-->>Phone: 连接完成
+    
+    Note over Phone,Headset: 2. 服务发现 (SDP)
+    Phone->>Headset: SDP 查询 A2DP
+    Headset-->>Phone: 返回 A2DP/AVRCP UUID
+    
+    Note over Phone,Headset: 3. A2DP 信令
+    Phone->>Headset: L2CAP 连接 (信令通道)
+    Phone->>Headset: 配置 Codec (SBC)
+    Headset-->>Phone: 配置确认
+    
+    Note over Phone,Headset: 4. 音频流传输
+    Phone->>Headset: L2CAP 连接 (媒体通道)
+    loop 持续传输
+        Phone->>Headset: RTP 音频包 (10ms)
+    end
+    
+    Note over Phone,Headset: 5. 播放控制
+    Phone->>Headset: AVRCP Play/Pause
+    Headset-->>Phone: 执行确认
+            </div>
+
+            <h3>📦 A2DP 数据包结构</h3>
+            <pre><code class="language-c">// A2DP 音频数据包结构
+// 基于 L2CAP ACL 数据
+
+typedef struct {
+    // L2CAP Header (4 bytes)
+    uint16_t l2cap_len;      // L2CAP 数据长度
+    uint16_t l2cap_cid;      // Channel ID (媒体通道)
+    
+    // RTP Header (12 bytes)
+    uint8_t  rtp_v_p_x_cc;   // Version, Padding, Extension, CC
+    uint8_t  rtp_m_pt;       // Marker, Payload Type
+    uint16_t rtp_seq;        // Sequence Number
+    uint32_t rtp_timestamp;  // Timestamp
+    uint32_t rtp_ssrc;       // SSRC
+    
+    // AVDTP Media Payload
+    uint8_t  frame_count;    // 帧数量
+    uint8_t  frame_len[4];   // 每帧长度
+    uint8_t  audio_data[];   // SBC/AAC 音频数据
+} a2dp_packet_t;
+
+// SBC 音频帧头
+typedef struct {
+    uint8_t  sync_word;      // 同步字 0x9C
+    uint8_t  freq_samp;      // 采样率 + 块数 + 声道 + 分配方法
+    uint8_t  subbands;       // 子带数 + 联合声道
+    uint8_t  snr_alloc;      // 信噪比 + 比特池
+    uint8_t  scale_factor[]; // 缩放因子
+    uint8_t  audio_data[];   // 音频数据
+} sbc_frame_t;
+
+// 典型配置：44.1kHz, 立体声，SBC
+// 每包约 120-150 bytes，每 10ms 发送一次</code></pre>
+
+            <h3>📈 完整连接流程</h3>
+            <div class="mermaid">
+flowchart TD
+    A[开机] --> B[BLE 广播]
+    B --> C{手机连接？}
+    C -->|是 | D[BLE 配对]
+    C -->|否 | B
+    
+    D --> E[经典蓝牙可发现]
+    E --> F{经典蓝牙连接？}
+    F -->|是 | G[建立 A2DP+HFP]
+    F -->|否 | E
+    
+    G --> H{音频播放？}
+    H -->|是 | I[A2DP 流传输]
+    H -->|否 | J{来电？}
+    
+    I --> K[播放音乐]
+    J -->|是 | L[HFP 通话]
+    J -->|否 | M[待机]
+    
+    K --> N{暂停/结束？}
+    L --> N
+    N -->|是 | M
+    N -->|否 | I
+    
+    M --> O{断开？}
+    O -->|是 | B
+    O -->|否 | M
+    
+    style A fill:#28a745,color:#fff
+    style I fill:#007bff,color:#fff
+    style L fill:#ffc107,color:#000
+    style B fill:#dc3545,color:#fff
+            </div>
+
+            <h3>💻 HFP 通话控制</h3>
+            <pre><code class="language-c">// HFP AT 命令交互
+// 通过 RFCOMM 通道传输
+
+// 耳机发送 AT 命令
+const char *hfp_at_commands[] = {
+    "AT+BRSF=1023\r\n",      // 支持的功能
+    "AT+CIND=?",             // 查询指示器
+    "AT+CLCC=?",             // 查询当前通话
+    "ATA\r\n",               // 接听电话
+    "AT+CHUP\r\n",           // 挂断电话
+    "AT+CKPD=200\r\n",       // 按键按下 (多功能键)
+};
+
+// 手机响应
+const char *hfp_responses[] = {
+    "+BRSF: 1023",           // 功能确认
+    "+CIND: (\"batt\",(0-5))", // 电池指示器
+    "OK",                    // 命令成功
+   "RING",                   // 来电提醒
+    "+CLCC: 1,1,4,0,\"123456789\"", // 通话列表
+};
+
+// HFP 事件处理
+void hfp_event_handler(hfp_event_t event) {
+    switch (event) {
+        case HFP_EVENT_CALL_INCOMING:
+            // 来电：播放铃声
+            play_ringtone();
+            break;
+            
+        case HFP_EVENT_CALL_CONNECTED:
+            // 通话建立：切换音频路由
+            audio_route_to_speaker();
+            break;
+            
+        case HFP_EVENT_CALL_ENDED:
+            // 通话结束：恢复待机
+            audio_route_to_idle();
+            break;
+            
+        case HFP_EVENT_AUDIO_CONNECTED:
+            // A2DP 音频连接
+            a2dp_streaming_start();
+            break;
+    }
+}</code></pre>
+
+            <h3>🎵 音频编码对比</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>编码</th>
+                        <th>码率</th>
+                        <th>延迟</th>
+                        <th>音质</th>
+                        <th>兼容性</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>SBC</strong></td>
+                        <td>328 kbps</td>
+                        <td>~150ms</td>
+                        <td>★★★☆☆</td>
+                        <td>100% (强制支持)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>AAC</strong></td>
+                        <td>256 kbps</td>
+                        <td>~100ms</td>
+                        <td>★★★★☆</td>
+                        <td>iOS/Android</td>
+                    </tr>
+                    <tr>
+                        <td><strong>aptX</strong></td>
+                        <td>352 kbps</td>
+                        <td>~70ms</td>
+                        <td>★★★★☆</td>
+                        <td>Qualcomm 芯片</td>
+                    </tr>
+                    <tr>
+                        <td><strong>aptX HD</strong></td>
+                        <td>576 kbps</td>
+                        <td>~150ms</td>
+                        <td>★★★★★</td>
+                        <td>高端设备</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LDAC</strong></td>
+                        <td>990 kbps</td>
+                        <td>~150ms</td>
+                        <td>★★★★★</td>
+                        <td>Sony/Android</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LC3</strong></td>
+                        <td>160-345 kbps</td>
+                        <td>~40ms</td>
+                        <td>★★★★☆</td>
+                        <td>LE Audio (蓝牙 5.2+)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>🔋 低功耗设计</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3>功耗模式</h3>
+                    <ul>
+                        <li><strong>播放中:</strong> 30-50mA</li>
+                        <li><strong>通话中:</strong> 40-60mA</li>
+                        <li><strong>待机:</strong> 3-5mA</li>
+                        <li><strong>休眠:</strong> &lt;50μA</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>省电策略</h3>
+                    <ul>
+                        <li>无音频时进入 Sniff 模式</li>
+                        <li>BLE 广播替代经典蓝牙</li>
+                        <li>自动关机 (30 分钟无操作)</li>
+                        <li>入耳检测暂停播放</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🔍 调试要点</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3>常见问题</h3>
+                    <ul>
+                        <li>连接失败：清除配对重试</li>
+                        <li>音频卡顿：干扰/距离过远</li>
+                        <li>不同步：重新配对</li>
+                        <li>通话无声：检查 HFP 路由</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>推荐工具</h3>
+                    <ul>
+                        <li>Frontline: 协议分析仪</li>
+                        <li>Ellisys: 蓝牙分析仪</li>
+                        <li>Wireshark: HCI 抓包</li>
+                        <li>Audio Tester: 音质测试</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🆕 LE Audio (蓝牙 5.2+)</h3>
+            <div class="mermaid">
+flowchart TB
+    subgraph LEA["LE Audio 特性"]
+        LC3[LC3 编码<br/>低功耗高音质]
+        MULTI[多设备连接<br/>同时播放]
+        BROADCAST[广播音频<br/>公共场所]
+        HEARING[助听器支持<br/>低功耗]
+    end
+    
+    subgraph Classic["经典音频"]
+        A2DP2[A2DP]
+        HFP2[HFP]
+    end
+    
+    LEA --> BENEFIT[优势<br/>低功耗 + 多设备 + 广播]
+    Classic --> LIMIT[限制<br/>功耗高 + 单连接]
+    
+    style LEA fill:#d4edda,stroke:#28a745
+    style Classic fill:#fff3cd,stroke:#ffc107
+            </div>
+        </section>
+    </main>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            sequence: {
+                actorMargin: 50,
+                boxMargin: 10,
+                messageMargin: 40,
+                showSequenceNumbers: true
+            }
+        });
+    </script>
+</body>
+</html>
