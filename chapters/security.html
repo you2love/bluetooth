@@ -53,19 +53,19 @@
             <div class="mermaid">
 flowchart TB
     subgraph Classic["经典蓝牙安全"]
-        C1[PIN Code 配对]
-        C2[SAFER+ 加密]
-        C3[E0 流密码]
-        C4[8-16 位 PIN]
+        C1["PIN Code 配对"]
+        C2["SAFER+ 加密"]
+        C3["E0 流密码"]
+        C4["8-16 位 PIN"]
     end
-    
+
     subgraph BLE["BLE 安全"]
-        B1[LE Legacy<br/>AES-CCM]
-        B2[LE SC<br/>P-256 ECDH]
-        B3[6 位 OOB/Numeric]
-        B4[AES-128 加密]
+        B1["LE Legacy AES-CCM"]
+        B2["LE SC P-256 ECDH"]
+        B3["6 位 OOB Numeric"]
+        B4["AES-128 加密"]
     end
-    
+
     style Classic fill:#fff3cd,stroke:#ffc107
     style BLE fill:#e3f2fd,stroke:#007bff
             </div>
@@ -117,39 +117,39 @@ flowchart TB
             <h4>1. 配对流程 (Pairing)</h4>
             <div class="mermaid">
 sequenceDiagram
-    participant A as 设备 A (手机/主机)
-    participant B as 设备 B (耳机/从机)
-    
-    Note over A,B: 场景 1: 固定 PIN 码 (最常见)
-    Note over B: 设备 B 有固定 PIN (如 0000)
-    A->>A: 用户输入 PIN (0000)
-    A->>A: 生成 Kinit = E(PIN, BD_ADDR_B)
+    participant A as 设备 A 手机主机
+    participant B as 设备 B 耳机从机
+
+    Note over A,B: 场景 1 固定 PIN 码 最常见
+    Note over B: 设备 B 有固定 PIN 如 0000
+    A->>A: 用户输入 PIN 0000
+    A->>A: 生成 Kinit = E PIN BD_ADDR_B
     B->>B: 使用固定 PIN 生成 Kinit
-    
-    Note over A,B: 场景 2: 设备 B 显示 PIN
-    Note over B: 设备 B 显示 PIN (如 123456)
+
+    Note over A,B: 场景 2 设备 B 显示 PIN
+    Note over B: 设备 B 显示 PIN 如 123456
     A->>A: 用户输入显示的 PIN
-    A->>A: 生成 Kinit = E(PIN, BD_ADDR_B)
+    A->>A: 生成 Kinit = E PIN BD_ADDR_B
     B->>B: 使用已知 PIN 生成 Kinit
-    
-    Note over A,B: 阶段 2: 链路密钥生成
+
+    Note over A,B: 阶段 2 链路密钥生成
     A->>B: 随机数 AU_RAND_A
     B->>A: 随机数 AU_RAND_B
-    
-    A->>A: 生成 Klink = E2(Kinit, AU_RAND_A, BD_ADDR_A)
-    B->>B: 生成 Klink = E2(Kinit, AU_RAND_B, BD_ADDR_B)
-    
-    Note over A,B: 阶段 3: 认证
-    A->>B: 认证请求 (AU_RAND_A)
-    B->>A: 认证响应 SRES = E1(Klink, AU_RAND_A, BD_ADDR_B)
+
+    A->>A: 生成 Klink = E2 Kinit AU_RAND_A BD_ADDR_A
+    B->>B: 生成 Klink = E2 Kinit AU_RAND_B BD_ADDR_B
+
+    Note over A,B: 阶段 3 认证
+    A->>B: 认证请求 AU_RAND_A
+    B->>A: 认证响应 SRES = E1 Klink AU_RAND_A BD_ADDR_B
     A->>A: 验证 SRES
-    
-    Note over A,B: 阶段 4: 加密启用
+
+    Note over A,B: 阶段 4 加密启用
     A->>B: 加密请求
-    A->>A: 生成加密密钥 Kc = E3(Klink, COF_RAND, BD_ADDR)
+    A->>A: 生成加密密钥 Kc = E3 Klink COF_RAND BD_ADDR
     B->>B: 生成加密密钥 Kc
-    
-    A->>B: 加密数据 (E0 流密码)
+
+    A->>B: 加密数据 E0 流密码
             </div>
             
             <p><strong>常见 PIN 码场景：</strong></p>
@@ -168,7 +168,7 @@ Kinit = SAFER+(PIN, BD_ADDR, 128)
 
 // 步骤 2: 生成链路密钥 Klink
 // 双方交换随机数，生成共享密钥
-Klink = E(Kinit, AU_RAND_A ⊕ AU_RAND_B)
+Klink = E(Kinit, AU_RAND_A XOR AU_RAND_B)
 
 // 步骤 3: 生成加密密钥 Kc (8-16 bytes)
 Kc = E(Klink, COF_RAND, BD_ADDR)
@@ -176,7 +176,7 @@ Kc = E(Klink, COF_RAND, BD_ADDR)
 // 步骤 4: E0 流密码加密
 // 使用 Kc 初始化 E0 流密码生成器
 // 每时隙生成 1 bit 密钥流
-ciphertext = plaintext ⊕ keystream
+ciphertext = plaintext XOR keystream
 
 // E0 流密码特点:
 // - 基于 4 个 LFSR (线性反馈移位寄存器)
@@ -221,30 +221,30 @@ ciphertext = plaintext ⊕ keystream
             <h4>1. LE Legacy (BLE 4.0-4.1)</h4>
             <div class="mermaid">
 sequenceDiagram
-    participant P as 外设 (Peripheral)
-    participant C as 中心 (Central)
-    
-    Note over P,C: Phase 1: 配对特性交换
-    P->>C: 配对请求 (IO 能力、认证要求)
+    participant P as 外设 Peripheral
+    participant C as 中心 Central
+
+    Note over P,C: Phase 1 配对特性交换
+    P->>C: 配对请求 IO 能力、认证要求
     C->>P: 配对响应
-    
-    Note over P,C: Phase 2: 临时密钥生成
-    P->>P: 生成 TK (Temporary Key)
-    C->>C: 生成 TK (Temporary Key)
-    
-    Note over P,C: 配对方式:
-    Note over P,C: Just Works: TK = 0
-    Note over P,C: Passkey: TK = 6 位数字
-    Note over P,C: OOB: TK = 带外数据
-    
-    Note over P,C: Phase 3: 短期密钥 STK 生成
+
+    Note over P,C: Phase 2 临时密钥生成
+    P->>P: 生成 TK Temporary Key
+    C->>C: 生成 TK Temporary Key
+
+    Note over P,C: 配对方式
+    Note over P,C: Just Works TK = 0
+    Note over P,C: Passkey TK = 6 位数字
+    Note over P,C: OOB TK = 带外数据
+
+    Note over P,C: Phase 3 短期密钥 STK 生成
     P->>C: 随机数 Ra
     C->>P: 随机数 Rb
-    
-    P->>P: STK = AES(TK, Ra ⊕ Rb)
-    C->>C: STK = AES(TK, Ra ⊕ Rb)
-    
-    Note over P,C: Phase 4: 长期密钥 LTK 分发
+
+    P->>P: STK = AES TK Ra XOR Rb
+    C->>C: STK = AES TK Ra XOR Rb
+
+    Note over P,C: Phase 4 长期密钥 LTK 分发
     P->>C: 加密传输 LTK
     C->>C: 存储 LTK 用于重连
             </div>
@@ -252,37 +252,37 @@ sequenceDiagram
             <h4>2. LE Secure Connections (BLE 4.2+)</h4>
             <div class="mermaid">
 sequenceDiagram
-    participant P as 外设 (Peripheral)
-    participant C as 中心 (Central)
-    
-    Note over P,C: Phase 1: 配对特性交换
-    P->>C: 配对请求 (LE SC 支持)
+    participant P as 外设 Peripheral
+    participant C as 中心 Central
+
+    Note over P,C: Phase 1 配对特性交换
+    P->>C: 配对请求 LE SC 支持
     C->>P: 配对响应
-    
-    Note over P,C: Phase 2: 公钥交换 (ECDH P-256)
-    P->>P: 生成私钥 SKa, 公钥 PKa
-    C->>C: 生成私钥 SKb, 公钥 PKb
-    
+
+    Note over P,C: Phase 2 公钥交换 ECDH P-256
+    P->>P: 生成私钥 SKa 公钥 PKa
+    C->>C: 生成私钥 SKb 公钥 PKb
+
     P->>C: 发送公钥 PKa
     C->>P: 发送公钥 PKb
-    
-    Note over P,C: Phase 3: DHKey 计算
-    P->>P: DHKey = ECDH(SKa, PKb)
-    C->>C: DHKey = ECDH(SKb, PKa)
-    
-    Note over P,C: Phase 4: 认证 (Numeric Comparison)
+
+    Note over P,C: Phase 3 DHKey 计算
+    P->>P: DHKey = ECDH SKa PKb
+    C->>C: DHKey = ECDH SKb PKa
+
+    Note over P,C: Phase 4 认证 Numeric Comparison
     P->>P: 计算确认值 Va
     C->>C: 计算确认值 Vb
-    
-    P->>P: 显示 6 位数字 (Va mod 1000000)
-    C->>C: 显示 6 位数字 (Vb mod 1000000)
-    
+
+    P->>P: 显示 6 位数字 Va mod 1000000
+    C->>C: 显示 6 位数字 Vb mod 1000000
+
     Note over P,C: 用户确认数字相同
-    
-    Note over P,C: Phase 5: 密钥生成
-    P->>P: LTK = f(DHKey, 随机数)
-    C->>C: LTK = f(DHKey, 随机数)
-    
+
+    Note over P,C: Phase 5 密钥生成
+    P->>P: LTK = f DHKey 随机数
+    C->>C: LTK = f DHKey 随机数
+
     Note over P,C: 加密连接建立
             </div>
 
@@ -433,24 +433,24 @@ sequenceDiagram
     participant App1 as 授权 App
     participant App2 as 其他 App
     participant Phone as 手机系统
-    
-    Note over Device,App1: 阶段 1: 首次配对
+
+    Note over Device,App1: 阶段 1 首次配对
     App1->>Device: 配对请求
     Device->>App1: 显示 6 位数字
     App1->>App1: 用户确认数字
     App1->>Device: 确认完成
     Device->>App1: 加密连接建立
-    Device->>Device: 存储 App1 的 IRK/LTK
-    
-    Note over Device,App2: 阶段 2: 其他 App 尝试连接
+    Device->>Device: 存储 App1 的 IRK LTK
+
+    Note over Device,App2: 阶段 2 其他 App 尝试连接
     App2->>Device: 扫描发现设备
     App2->>Device: 连接请求
     Device->>Device: 检查绑定列表
-    Device->>App2: ❌ 拒绝 (未绑定)
-    
-    Note over Device,Phone: 阶段 3: 系统级保护
+    Device->>App2: 拒绝 未绑定
+
+    Note over Device,Phone: 阶段 3 系统级保护
     Phone->>Phone: 每个 App 独立的蓝牙权限
-    Phone->>App2: ❌ 无权限访问已配对设备
+    Phone->>App2: 无权限访问已配对设备
             </div>
 
             <h4>2. GATT 权限控制</h4>
@@ -682,18 +682,18 @@ void on_gatt_read_request(ble_gatts_evt_read_t *p_evt) {
             <h4>1. Just Works (最简单)</h4>
             <div class="mermaid">
 sequenceDiagram
-    participant Device as BLE 设备 (无屏)
+    participant Device as BLE 设备 无屏
     participant Phone as 手机 App
-    
-    Device->>Phone: 广播 (可配对)
+
+    Device->>Phone: 广播 可配对
     Phone->>Device: 连接请求
     Phone->>Device: 配对请求
-    Device->>Device: IO 能力 = NoInputNoOutput
-    Phone->>Phone: 自动确认 (Just Works)
-    Device->>Phone: 配对完成 (TK = 0)
+    Device->>Device: IO 能力 NoInputNoOutput
+    Phone->>Phone: 自动确认 Just Works
+    Device->>Phone: 配对完成 TK = 0
     Device->>Phone: 加密连接建立
-    
-    Note over Device,Phone: ⚠️ 无 MITM 保护，可能被中间人攻击
+
+    Note over Device,Phone: 无 MITM 保护，可能被中间人攻击
             </div>
             
             <pre><code class="language-c">// Nordic SDK - Just Works 配置
@@ -725,18 +725,18 @@ sequenceDiagram
     participant Device as BLE 设备
     participant Phone as 手机 App
     participant User as 用户
-    
+
     Note over Device: 设备有固定 PIN
     Note over Device: 如 0000 或 123456
-    
+
     Phone->>Device: 连接请求
     Phone->>User: 提示输入 PIN
-    User->>Phone: 输入 PIN (0000)
+    User->>Phone: 输入 PIN 0000
     Phone->>Device: 配对请求 + PIN
-    Device->>Device: 验证 PIN (与预设比较)
-    Device->>Phone: ✅ 配对成功
-    
-    Note over Device,Phone: ⚠️ PIN 可能通过产品泄露
+    Device->>Device: 验证 PIN 与预设比较
+    Device->>Phone: 配对成功
+
+    Note over Device,Phone: PIN 可能通过产品泄露
             </div>
             
             <pre><code class="language-c">// 固定 PIN 码配置
@@ -770,17 +770,17 @@ sequenceDiagram
     participant Phone as 手机 App
     participant User as 用户
     participant Box as 产品包装
-    
+
     Note over Box: 包装上印刷唯一 PIN
-    Note over Box: 如 "PIN: A1B2C3D4"
-    
+    Note over Box: 如 PIN A1B2C3D4
+
     User->>User: 查看包装上的 PIN
     User->>Phone: 输入 PIN
     Phone->>Device: 配对请求 + PIN
-    Device->>Device: 验证 PIN (与 Flash 中存储比较)
-    Device->>Phone: ✅ 配对成功
-    
-    Note over Device,Phone: ✅ 每个设备唯一 PIN，更安全
+    Device->>Device: 验证 PIN 与 Flash 中存储比较
+    Device->>Phone: 配对成功
+
+    Note over Device,Phone: 每个设备唯一 PIN，更安全
             </div>
             
             <pre><code class="language-c">// 包装印刷唯一 PIN 实现
@@ -827,20 +827,20 @@ sequenceDiagram
     participant Device as BLE 设备
     participant Phone as 手机 App
     participant User as 用户
-    participant QR as 二维码/NFC
-    
-    Note over QR: 二维码包含:
-    Note over QR: - 设备地址
-    Note over QR: - OOB 数据
-    
+    participant QR as 二维码 NFC
+
+    Note over QR: 二维码包含
+    Note over QR: 设备地址
+    Note over QR: OOB 数据
+
     User->>Phone: 扫描二维码
     Phone->>Phone: 解析 OOB 数据
     Phone->>Device: 连接请求
     Phone->>Device: 配对请求 + OOB 数据
     Device->>Device: 验证 OOB 数据
-    Device->>Phone: ✅ 配对成功
-    
-    Note over Device,Phone: ✅ 最高安全性，MITM 保护
+    Device->>Phone: 配对成功
+
+    Note over Device,Phone: 最高安全性，MITM 保护
             </div>
             
             <pre><code class="language-c">// 二维码/NFC OOB 配对实现
@@ -890,21 +890,21 @@ void ble_gap_sec_params_init(void) {
             <h4>5. 物理按钮确认 (推荐用于智能锁等)</h4>
             <div class="mermaid">
 sequenceDiagram
-    participant Device as BLE 设备 (有按钮)
+    participant Device as BLE 设备 有按钮
     participant Phone as 手机 App
     participant User as 用户
-    
+
     User->>Device: 长按按钮 3 秒
     Device->>Device: 进入配对模式
-    Device->>Phone: 广播 (可配对)
+    Device->>Phone: 广播 可配对
     Phone->>Device: 连接请求
     Phone->>Device: 配对请求
-    
+
     Note over Device: 按钮灯闪烁
     User->>Device: 短按按钮确认
-    Device->>Phone: ✅ 配对成功
-    
-    Note over Device,Phone: ✅ 用户物理确认，MITM 保护
+    Device->>Phone: 配对成功
+
+    Note over Device,Phone: 用户物理确认，MITM 保护
             </div>
             
             <pre><code class="language-c">// 物理按钮确认实现
@@ -986,6 +986,340 @@ void confirm_pairing(void) {
                         <td>耳机/音箱</td>
                         <td>固定 PIN (0000)</td>
                         <td>行业惯例，简单</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>💾 配对信息存储详解</h3>
+            <p class="lead">配对成功后保存什么信息？什么情况下会重新要求配对？</p>
+
+            <h4>1. 配对成功后保存的信息</h4>
+            <div class="mermaid">
+flowchart TB
+    subgraph Bonding["绑定信息 Bonding Data"]
+        LTK["LTK 长期密钥 16 bytes"]
+        IRK["IRK 身份解析密钥 16 bytes"]
+        ADDR["对端设备地址 6 bytes"]
+        EDIV["EDIV 加密除数 2 bytes"]
+        RAND["RAND 随机数 8 bytes"]
+        CSRK["CSRK 签名密钥 16 bytes"]
+    end
+    
+    subgraph Storage["存储位置"]
+        Flash["设备 Flash"]
+        PhoneFlash["手机 Flash"]
+    end
+    
+    LTK --> Flash
+    IRK --> Flash
+    ADDR --> Flash
+    EDIV --> Flash
+    RAND --> Flash
+    CSRK --> Flash
+    
+    LTK --> PhoneFlash
+    IRK --> PhoneFlash
+    ADDR --> PhoneFlash
+    
+    style Bonding fill:#e3f2fd,stroke:#007bff
+    style Storage fill:#d4edda,stroke:#28a745
+            </div>
+
+            <h4>保存的密钥信息</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>密钥</th>
+                        <th>大小</th>
+                        <th>用途</th>
+                        <th>存储位置</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>LTK</strong><br/>Long Term Key</td>
+                        <td>16 bytes</td>
+                        <td>加密连接，重连时生成会话密钥</td>
+                        <td>设备 + 手机</td>
+                    </tr>
+                    <tr>
+                        <td><strong>IRK</strong><br/>Identity Resolving Key</td>
+                        <td>16 bytes</td>
+                        <td>解析私有地址，识别设备</td>
+                        <td>设备 + 手机</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CSRK</strong><br/>Connection Signature Key</td>
+                        <td>16 bytes</td>
+                        <td>数据签名认证</td>
+                        <td>设备 + 手机</td>
+                    </tr>
+                    <tr>
+                        <td><strong>EDIV + RAND</strong></td>
+                        <td>10 bytes</td>
+                        <td>与 LTK 一起唯一标识密钥</td>
+                        <td>设备 + 手机</td>
+                    </tr>
+                    <tr>
+                        <td><strong>设备地址</strong></td>
+                        <td>6 bytes</td>
+                        <td>对端设备的 MAC 地址</td>
+                        <td>设备 + 手机</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>2. 绑定信息存储示例</h4>
+            <pre><code class="language-c">// Nordic SDK - 绑定信息存储结构
+
+typedef struct {
+    // 密钥信息
+    uint8_t  ltk[16];         // 长期密钥
+    uint8_t  irk[16];         // 身份解析密钥
+    uint8_t  csrk[16];        // 签名密钥
+    
+    // 密钥标识
+    uint16_t ediv;            // 加密除数
+    uint8_t  rand[8];         // 随机数
+    
+    // 设备信息
+    uint8_t  peer_addr[6];    // 对端设备地址
+    uint8_t  addr_type;       // 地址类型 (公共/随机)
+    
+    // 标志位
+    uint8_t  flags;           // 绑定标志
+    // bit0: LTK 存在
+    // bit1: IRK 存在
+    // bit2: CSRK 存在
+    // bit3: 已加密
+    
+} bond_info_t;
+
+// 存储到 Flash
+void store_bonding_info(bond_info_t *p_info) {
+    // 擦除 Flash 扇区
+    sd_flash_page_erase((uint32_t*)BONDING_FLASH_ADDR, 1);
+    
+    // 写入绑定信息
+    sd_flash_write((uint32_t*)BONDING_FLASH_ADDR, 
+                   (uint32_t*)p_info, 
+                   sizeof(bond_info_t) / 4);
+}
+
+// 从 Flash 读取
+void load_bonding_info(bond_info_t *p_info) {
+    memcpy(p_info, 
+           (void*)BONDING_FLASH_ADDR, 
+           sizeof(bond_info_t));
+}
+
+// 检查是否已绑定
+bool is_bonded(ble_gap_addr_t *p_peer_addr) {
+    bond_info_t bond_info;
+    load_bonding_info(&bond_info);
+    
+    // 比较设备地址
+    if (memcmp(bond_info.peer_addr, 
+               p_peer_addr->addr, 
+               6) == 0) {
+        return true;  // 已绑定
+    }
+    return false;  // 未绑定
+}</code></pre>
+
+            <h4>3. 什么情况下会重新要求配对？</h4>
+            <div class="mermaid">
+flowchart TB
+    A[设备尝试连接] --> B{检查绑定列表}
+    B -->|找到绑定 | C{密钥有效？}
+    B -->|未找到 | D[要求配对]
+    
+    C -->|LTK 有效 | E[直接加密连接]
+    C -->|LTK 失效 | D
+    
+    D --> F[用户确认]
+    F --> G[生成新密钥]
+    G --> H[更新绑定列表]
+    H --> E
+    
+    style D fill:#ffc107,color:#000
+    style E fill:#28a745,color:#fff
+            </div>
+
+            <h4>需要重新配对的场景</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>场景</th>
+                        <th>原因</th>
+                        <th>解决方案</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>设备恢复出厂设置</strong></td>
+                        <td>Flash 中的绑定信息被清除</td>
+                        <td>删除手机上的配对记录，重新配对</td>
+                    </tr>
+                    <tr>
+                        <td><strong>手机删除配对</strong></td>
+                        <td>手机清除了绑定信息</td>
+                        <td>设备端也删除对应绑定，重新配对</td>
+                    </tr>
+                    <tr>
+                        <td><strong>密钥过期/失效</strong></td>
+                        <td>安全策略要求定期更新密钥</td>
+                        <td>自动触发重新配对</td>
+                    </tr>
+                    <tr>
+                        <td><strong>设备地址变更</strong></td>
+                        <td>使用私有地址且 IRK 不匹配</td>
+                        <td>重新配对更新 IRK</td>
+                    </tr>
+                    <tr>
+                        <td><strong>跨设备配对</strong></td>
+                        <td>设备 A 配对，用手机 B 连接</td>
+                        <td>每个手机需要独立配对</td>
+                    </tr>
+                    <tr>
+                        <td><strong>固件升级后</strong></td>
+                        <td>安全协议变更或密钥格式变化</td>
+                        <td>清除旧绑定，重新配对</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>4. 绑定管理最佳实践</h4>
+            <pre><code class="language-c">// Nordic SDK - 绑定管理
+
+// 配对完成回调
+void on_ble_gap_evt_auth_status(ble_gap_evt_auth_status_t *p_auth_status) {
+    if (p_auth_status->auth_status == BLE_GAP_SEC_STATUS_SUCCESS) {
+        // 配对成功
+        
+        if (p_auth_status->bonded) {
+            // 已绑定，存储密钥到 Flash
+            bond_info_t bond_info;
+            
+            // 获取密钥信息
+            ble_gap_sec_keys_t sec_keys;
+            sd_ble_gap_sec_info_get(m_conn_handle, &sec_keys);
+            
+            // 填充绑定结构
+            memcpy(bond_info.ltk, sec_keys.p_enc_key->ltk_info.ltk, 16);
+            memcpy(bond_info.irk, sec_keys.p_id_key->id_info.irk, 16);
+            memcpy(bond_info.csrk, sec_keys.p_sign_key->csrk, 16);
+            bond_info.ediv = sec_keys.p_enc_key->ltk_info.ediv;
+            memcpy(bond_info.rand, sec_keys.p_enc_key->ltk_info.rand, 8);
+            
+            // 获取对端地址
+            ble_gap_addr_t peer_addr;
+            sd_ble_gap_addr_get(&peer_addr);
+            memcpy(bond_info.peer_addr, peer_addr.addr, 6);
+            bond_info.addr_type = peer_addr.addr_type;
+            
+            // 设置标志位
+            bond_info.flags = 0x07;  // LTK + IRK + CSRK 都存在
+            
+            // 存储到 Flash
+            store_bonding_info(&bond_info);
+            
+            // 更新绑定计数
+            increment_bond_count();
+        }
+    } else {
+        // 配对失败处理
+        handle_pairing_failure(p_auth_status->auth_status);
+    }
+}
+
+// 重连时检查绑定
+void on_ble_gap_evt_connected(ble_gap_evt_connected_t *p_connected) {
+    ble_gap_addr_t *p_peer_addr = &p_connected->peer_addr;
+    
+    // 检查是否在绑定列表中
+    if (is_bonded(p_peer_addr)) {
+        // 已绑定，尝试加密连接
+        bond_info_t bond_info;
+        load_bonding_info(&bond_info);
+        
+        // 检查 LTK 是否有效
+        if (bond_info.flags & 0x01) {  // LTK 存在
+            // 使用存储的 LTK 加密连接
+            ble_gap_enc_info_t enc_info;
+            memcpy(enc_info.ltk, bond_info.ltk, 16);
+            enc_info.ediv = bond_info.ediv;
+            memcpy(enc_info.rand, bond_info.rand, 8);
+            
+            sd_ble_gap_sec_info_reply(m_conn_handle, &enc_info, NULL, NULL);
+        } else {
+            // LTK 无效，要求重新配对
+            request_repairing();
+        }
+    } else {
+        // 未绑定，要求配对
+        request_pairing();
+    }
+}
+
+// 删除绑定
+void delete_bonding(ble_gap_addr_t *p_peer_addr) {
+    bond_info_t bond_info;
+    load_bonding_info(&bond_info);
+    
+    // 比较地址
+    if (memcmp(bond_info.peer_addr, p_peer_addr->addr, 6) == 0) {
+        // 清除绑定信息
+        memset(&bond_info, 0, sizeof(bond_info_t));
+        store_bonding_info(&bond_info);
+        
+        // 减少绑定计数
+        decrement_bond_count();
+    }
+}
+
+// 清除所有绑定
+void delete_all_bondings(void) {
+    // 擦除整个绑定 Flash 区域
+    for (int i = 0; i < BONDING_FLASH_PAGES; i++) {
+        sd_flash_page_erase((uint32_t*)(BONDING_FLASH_ADDR + i * 4096), 1);
+    }
+}</code></pre>
+
+            <h4>5. 绑定数量限制</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>设备类型</th>
+                        <th>典型绑定数</th>
+                        <th>Flash 占用</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>手环/手表</td>
+                        <td>1-2 个</td>
+                        <td>~128 bytes</td>
+                        <td>通常只连接一个手机</td>
+                    </tr>
+                    <tr>
+                        <td>蓝牙耳机</td>
+                        <td>5-8 个</td>
+                        <td>~512 bytes</td>
+                        <td>多设备切换</td>
+                    </tr>
+                    <tr>
+                        <td>智能锁</td>
+                        <td>10-20 个</td>
+                        <td>~1-2 KB</td>
+                        <td>多家庭成员</td>
+                    </tr>
+                    <tr>
+                        <td>蓝牙网关</td>
+                        <td>50-100 个</td>
+                        <td>~5-10 KB</td>
+                        <td>连接多个子设备</td>
                     </tr>
                 </tbody>
             </table>
