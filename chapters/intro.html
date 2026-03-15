@@ -54,48 +54,6 @@ flowchart TD
     style BLE fill:#17a2b8,color:#fff
             </div>
 
-            <h3>📡 物理层技术要点</h3>
-            <div class="grid">
-                <div class="card">
-                    <h3>频段与信道</h3>
-                    <p><strong>2.4GHz ISM</strong> (2400-2483.5 MHz)</p>
-                    <ul>
-                        <li><strong>BLE:</strong> 40 个信道，信道间隔 2MHz</li>
-                        <li><strong>经典蓝牙:</strong> 79 个信道，信道间隔 1MHz</li>
-                        <li><strong>跳频:</strong> 1600 次/秒</li>
-                        <li><strong>广播信道:</strong> 37/38/39 (BLE)</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <h3>调制方式</h3>
-                    <p><strong>GFSK</strong> (高斯频移键控)</p>
-                    <ul>
-                        <li>BT=0.5, 调制指数=0.45-0.55</li>
-                        <li><strong>BLE 1M PHY:</strong> 1Mbps (LE 1M)</li>
-                        <li><strong>BLE 2M PHY:</strong> 2Mbps (LE 2M)</li>
-                        <li><strong>BLE Coded PHY:</strong> 500kbps/125kbps (长距离)</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <h3>功率等级</h3>
-                    <ul>
-                        <li><strong>Class 1:</strong> +20dBm (100mW), 100m</li>
-                        <li><strong>Class 2:</strong> +4dBm (2.5mW), 10m</li>
-                        <li><strong>Class 3:</strong> 0dBm (1mW), 1m</li>
-                        <li><strong>BLE 典型:</strong> 0dBm 到 +10dBm</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <h3>射频灵敏度</h3>
-                    <ul>
-                        <li><strong>BLE 1M:</strong> -70dBm 到 -97dBm</li>
-                        <li><strong>BLE Coded:</strong> -103dBm (长距离)</li>
-                        <li><strong>经典蓝牙:</strong> -70dBm 到 -85dBm</li>
-                        <li><strong>路径损耗:</strong> 自由空间 20dB/10 倍距离</li>
-                    </ul>
-                </div>
-            </div>
-
             <h3>📊 版本演进与开发支持</h3>
             <div class="mermaid">
 timeline
