@@ -144,30 +144,193 @@ uint8_t hrm_data[] = {
 sequenceDiagram
     participant HRM as 心率传感器
     participant Phone as 手机 App
-    
+
     Note over HRM,Phone: 1. 广播阶段
     HRM->>Phone: ADV_IND (HRM Service 0x180D)
-    
+
     Note over HRM,Phone: 2. 连接阶段
     Phone->>HRM: CONNECT_IND
     HRM-->>Phone: 连接完成
-    
+
     Note over HRM,Phone: 3. 服务发现
     Phone->>HRM: 发现服务 0x180D
     Phone->>HRM: 发现特征值 0x2A37
-    
+
     Note over HRM,Phone: 4. 启用通知
     Phone->>HRM: Write CCCD (0x0001)
     HRM-->>Phone: Write Response
-    
+
     Note over HRM,Phone: 5. 数据推送
     loop 每秒
         HRM->>Phone: Handle Value Notification (心率 72)
     end
-    
+
     Note over HRM,Phone: 6. 断开连接
     Phone->>HRM: 断开连接
             </div>
+
+            <h3>🔬 实际心率值传输详解</h3>
+            <p class="lead">以用户心率为 <strong>75 BPM</strong> 为例，详细展示每一层协议传输的具体数值。</p>
+
+            <h4>步骤 1: 传感器检测心率</h4>
+            <pre><code class="language-c">// 光电传感器 (PPG) 检测心跳
+// 检测到一次心跳，计算心率为 75 BPM
+
+uint8_t heart_rate_bpm = 75;  // 实际心率值
+
+// 同时测量 RR 间期 (两次心跳间隔)
+// 假设间隔为 800ms = 819 个单位 (1 单位 = 1/1024 秒)
+uint16_t rr_interval = 819;</code></pre>
+
+            <h4>步骤 2: 构建 HRM 数据</h4>
+            <pre><code class="language-c">// 构建心率测量数据包 (5 bytes)
+uint8_t hrm_payload[] = {
+    0x10,       // [0] Flags: 
+                //   bit0=0 (8-bit HR), 
+                //   bit4=1 (RR interval present)
+    0x4B,       // [1] Heart Rate: 75 BPM (0x4B = 75)
+    0x33, 0x03  // [2-3] RR Interval: 0x0333 = 819 (819/1024 = 0.8 秒)
+};
+
+// 标志位详解:
+// 0x10 = 0001 0000
+// bit4=1 → 有 RR 间期
+// bit0=0 → 8 位心率值 (0-255 BPM 足够)</code></pre>
+
+            <h4>步骤 3: ATT 层封装</h4>
+            <pre><code class="language-c">// ATT Handle Value Notification (Opcode = 0x1B)
+// 特征值句柄 = 0x0015 (假设)
+
+uint8_t att_pdu[] = {
+    0x1B,           // Opcode: Handle Value Notification
+    0x15, 0x00,     // Handle: 0x0015 (心率特征值句柄)
+    // 下面是 GATT 数据
+    0x10,           // Flags
+    0x4B,           // Heart Rate: 75
+    0x33, 0x03      // RR Interval: 819
+};
+// 总长度：7 bytes</code></pre>
+
+            <h4>步骤 4: L2CAP 层封装</h4>
+            <pre><code class="language-c">// L2CAP B-Frame (面向连接的信道)
+// CID = 0x0004 (动态分配的 ATT 信道)
+
+uint8_t l2cap_packet[] = {
+    0x07, 0x00,     // L2CAP Length: 7 bytes (ATT PDU 长度)
+    0x04, 0x00,     // CID: 0x0004 (ATT 信道)
+    // 下面是 ATT PDU
+    0x1B, 0x15, 0x00, 0x10, 0x4B, 0x33, 0x03
+};
+// 总长度：11 bytes</code></pre>
+
+            <h4>步骤 5: HCI ACL 数据包</h4>
+            <pre><code class="language-c">// HCI ACL Data Packet (Host → Controller)
+// 连接句柄 = 0x0001
+
+uint8_t hci_acl_packet[] = {
+    // HCI ACL Header
+    0x01, 0x00,     // Handle: 0x0001 (连接句柄)
+    0x0B, 0x00,     // Data Total Length: 11 bytes
+    
+    // ACL Data
+    0x07, 0x00,     // L2CAP Length
+    0x04, 0x00,     // CID
+    0x1B, 0x15, 0x00, 0x10, 0x4B, 0x33, 0x03
+};
+// 总长度：15 bytes</code></pre>
+
+            <h4>步骤 6: LL 层传输</h4>
+            <pre><code class="language-c">// Link Layer Data PDU
+// 分为 2 个 LL 数据包发送 (因为单个 LL PDU 最大 27 bytes)
+
+// LL PDU #1 (包含大部分数据)
+// LL PDU #2 (如果有剩余)
+
+// 实际空中传输使用 2M PHY 或 1M PHY
+// 每个数据包包含:
+// - LL Header (2 bytes)
+// - Payload (数据)
+// - MIC (加密校验，4 bytes)
+// - CRC (3 bytes)</code></pre>
+
+            <h4>步骤 7: 手机接收并解析</h4>
+            <pre><code class="language-kotlin">// 手机收到数据后逐层解析
+
+// 1. 解析 L2CAP → 提取 ATT PDU
+val attPdu = l2capPayload  // [0x1B, 0x15, 0x00, 0x10, 0x4B, 0x33, 0x03]
+
+// 2. 解析 ATT → 提取 GATT 数据
+val opcode = attPdu[0]     // 0x1B = Notification
+val handle = attPdu[1] or (attPdu[2] shl 8)  // 0x0015
+val gattData = attPdu.drop(3)  // [0x10, 0x4B, 0x33, 0x03]
+
+// 3. 解析 HRM 数据
+val flags = gattData[0]    // 0x10
+val hrFormat = flags and 0x01  // 0 = 8-bit
+val hasRR = (flags and 0x10) != 0  // true = 有 RR 间期
+
+val heartRate = gattData[1].toInt() and 0xFF  // 0x4B = 75 BPM
+
+if (hasRR) {
+    val rrInterval = ((gattData[2].toInt() and 0xFF) or 
+                     ((gattData[3].toInt() and 0xFF) shl 8))
+    // 0x0333 = 819 → 819/1024 = 0.8 秒
+    val rrSeconds = rrInterval / 1024.0
+}
+
+// 显示结果：心率 75 BPM, RR 间期 0.8 秒</code></pre>
+
+            <h4>完整数据流图</h4>
+            <div class="mermaid">
+flowchart LR
+    subgraph Sensor["传感器"]
+        HR[心率 75 BPM] --> PPG[PPG 检测]
+    end
+    
+    subgraph Device["设备固件"]
+        PPG --> HRM[HRM 数据 0x10,0x4B,0x33,0x03]
+        HRM --> ATT[ATT PDU 0x1B,0x15,0x00...]
+        ATT --> L2CAP[L2CAP 0x07,0x00,0x04,0x00...]
+        L2CAP --> HCI[HCI ACL Packet]
+        HCI --> LL[LL Data PDU]
+        LL --> RF[RF 射频]
+    end
+    
+    subgraph Phone["手机"]
+        RF2[RF 接收] --> HCI2[HCI ACL]
+        HCI2 --> L2CAP2[L2CAP 解析]
+        L2CAP2 --> ATT2[ATT 解析]
+        ATT2 --> GATT2[GATT 通知回调]
+        GATT2 --> APP[App 显示：75 BPM]
+    end
+    
+    RF -.->|BLE 空中传输 | RF2
+    
+    style Sensor fill:#d4edda,stroke:#28a745
+    style Device fill:#e3f2fd,stroke:#007bff
+    style Phone fill:#fff3cd,stroke:#ffc107
+            </div>
+
+            <h4>实际抓包数据示例</h4>
+            <pre><code class="language-bash"># Wireshark/BT 抓包显示
+
+Frame 1234: 27 bytes on wire
+Bluetooth HCI ACL Packet
+    Handle: 0x0001
+    Data Length: 11 bytes
+L2CAP
+    Length: 7
+    CID: 0x0004 (ATT)
+ATT
+    Opcode: Handle Value Notification (0x1B)
+    Handle: 0x0015
+    Value: 104b3303
+Heart Rate Measurement
+    Flags: 0x10
+        ..00 0000 = Heart Rate Value Format: uint8 (0)
+        .001 .... = Sensor Status: RR Interval present (1)
+    Heart Rate: 75 (0x4B)
+    RR-Interval: 0.800 sec (819)</code></pre>
 
             <h3>💻 固件代码示例</h3>
             <pre><code class="language-c">#include "nrf_sdm.h"
