@@ -6,6 +6,7 @@
     <title>蓝牙核心概念 - 蓝牙协议开发教程</title>
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
 </head>
 <body>
@@ -29,163 +30,471 @@
     <main class="main">
         <section class="section">
             <h2>蓝牙核心概念</h2>
-            <p>蓝牙是一种工作在 2.4GHz ISM 频段的短距离无线通信协议，采用跳频扩频 (FHSS) 技术实现抗干扰，支持经典蓝牙 (BR/EDR) 和低功耗蓝牙 (BLE) 两种模式。</p>
+            <p class="lead">面向软件开发人员的蓝牙技术入门，掌握核心概念、版本演进和开发选型。</p>
 
-            <h3>技术规格详解</h3>
+            <h3>💡 核心概述</h3>
+            <p>蓝牙是一种工作在 <strong>2.4GHz ISM 频段</strong> 的短距离无线通信协议，采用 <strong>跳频扩频 (FHSS)</strong> 技术实现抗干扰。现代蓝牙支持两种模式：</p>
+            
+            <div class="mermaid">
+flowchart TD
+    BT[蓝牙技术]
+    BT --> Classic[经典蓝牙 BR/EDR]
+    BT --> BLE[低功耗蓝牙 BLE]
+    
+    Classic --> A2DP[A2DP 音频]
+    Classic --> HFP[HFP 通话]
+    Classic --> SPP[SPP 串口]
+    
+    BLE --> GATT[GATT 服务]
+    BLE --> GAP[GAP 广播]
+    BLE --> Mesh[Mesh 组网]
+    
+    style BT fill:#007bff,color:#fff
+    style Classic fill:#28a745,color:#fff
+    style BLE fill:#17a2b8,color:#fff
+            </div>
+
+            <h3>📡 物理层技术要点</h3>
             <div class="grid">
                 <div class="card">
-                    <h3>📡 频段与信道</h3>
-                    <p>2.4GHz ISM 频段 (2400-2483.5 MHz)</p>
+                    <h3>频段与信道</h3>
+                    <p><strong>2.4GHz ISM</strong> (2400-2483.5 MHz)</p>
                     <ul>
-                        <li>BLE: 40 个信道 (每 2MHz)</li>
-                        <li>经典蓝牙：79 个信道 (每 1MHz)</li>
-                        <li>跳频：1600hop/s (BLE) / 1600hop/s (经典)</li>
+                        <li><strong>BLE:</strong> 40 个信道，信道间隔 2MHz</li>
+                        <li><strong>经典蓝牙:</strong> 79 个信道，信道间隔 1MHz</li>
+                        <li><strong>跳频:</strong> 1600 次/秒</li>
+                        <li><strong>广播信道:</strong> 37/38/39 (BLE)</li>
                     </ul>
                 </div>
                 <div class="card">
-                    <h3>📊 调制方式</h3>
-                    <p>GFSK (高斯频移键控)</p>
+                    <h3>调制方式</h3>
+                    <p><strong>GFSK</strong> (高斯频移键控)</p>
                     <ul>
                         <li>BT=0.5, 调制指数=0.45-0.55</li>
-                        <li>BLE 1M PHY: 1Mbps</li>
-                        <li>BLE 2M PHY: 2Mbps</li>
-                        <li>BLE Coded PHY: 500kbps/125kbps</li>
+                        <li><strong>BLE 1M PHY:</strong> 1Mbps (LE 1M)</li>
+                        <li><strong>BLE 2M PHY:</strong> 2Mbps (LE 2M)</li>
+                        <li><strong>BLE Coded PHY:</strong> 500kbps/125kbps (长距离)</li>
                     </ul>
                 </div>
                 <div class="card">
-                    <h3>🔋 功率等级</h3>
+                    <h3>功率等级</h3>
                     <ul>
-                        <li>Class 1: 100mW (+20dBm), 100m</li>
-                        <li>Class 2: 2.5mW (+4dBm), 10m</li>
-                        <li>Class 3: 1mW (0dBm), 1m</li>
+                        <li><strong>Class 1:</strong> +20dBm (100mW), 100m</li>
+                        <li><strong>Class 2:</strong> +4dBm (2.5mW), 10m</li>
+                        <li><strong>Class 3:</strong> 0dBm (1mW), 1m</li>
+                        <li><strong>BLE 典型:</strong> 0dBm 到 +10dBm</li>
                     </ul>
                 </div>
                 <div class="card">
-                    <h3>🔒 调制差异</h3>
+                    <h3>射频灵敏度</h3>
                     <ul>
-                        <li>经典蓝牙：BR/EDR, EDR(π/4-DQPSK, 8DPSK)</li>
-                        <li>BLE: 单模设备，无法与经典蓝牙兼容</li>
+                        <li><strong>BLE 1M:</strong> -70dBm 到 -97dBm</li>
+                        <li><strong>BLE Coded:</strong> -103dBm (长距离)</li>
+                        <li><strong>经典蓝牙:</strong> -70dBm 到 -85dBm</li>
+                        <li><strong>路径损耗:</strong> 自由空间 20dB/10 倍距离</li>
                     </ul>
                 </div>
             </div>
 
-            <h3>双模 vs 单模</h3>
+            <h3>📊 版本演进与开发支持</h3>
+            <div class="mermaid">
+timeline
+    title 蓝牙版本演进
+    section 经典蓝牙
+        1999 : 1.0 : 首次发布 1Mbps
+        2004 : 2.0+EDR : 3Mbps EDR
+        2009 : 3.0+HS : 24Mbps (802.11)
+    section 低功耗蓝牙
+        2010 : 4.0 : BLE 引入
+        2016 : 5.0 : 2M PHY, Long Range
+        2020 : 5.2 : LE Audio, LC3
+        2023 : 5.4 : PAwR, ESL
+            </div>
+
             <table class="table">
                 <thead>
                     <tr>
-                        <th>类型</th>
-                        <th>支持模式</th>
-                        <th>典型应用</th>
-                        <th>芯片</th>
+                        <th>版本</th>
+                        <th>年份</th>
+                        <th>关键特性</th>
+                        <th>开发影响</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>双模 (BR/EDR+BLE)</strong></td>
-                        <td>A2DP, HFP, SPP + GATT</td>
-                        <td>手机、平板、PC</td>
-                        <td>Qualcomm, Broadcom</td>
+                        <td><strong>4.0</strong></td>
+                        <td>2010</td>
+                        <td>BLE 首次引入</td>
+                        <td>IoT 设备起点，最低支持版本</td>
                     </tr>
                     <tr>
-                        <td><strong>单模 (BLE Only)</strong></td>
-                        <td>GATT only</td>
-                        <td>IoT 设备、传感器</td>
-                        <td>Nordic, TI, Dialog</td>
+                        <td><strong>4.2</strong></td>
+                        <td>2014</td>
+                        <td>IPv6, 隐私特性</td>
+                        <td>支持直接联网，隐私地址</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5.0</strong></td>
+                        <td>2016</td>
+                        <td>2M PHY, LE Coded, 广播扩展</td>
+                        <td>高速/长距离模式，定位应用</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5.1</strong></td>
+                        <td>2019</td>
+                        <td>AOA/AOD 定位</td>
+                        <td>室内定位，方向查找</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5.2</strong></td>
+                        <td>2020</td>
+                        <td>LE Audio, LC3, Isochronous</td>
+                        <td>音频流，多设备同步</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5.3</strong></td>
+                        <td>2021</td>
+                        <td>连接子事件，信道分类</td>
+                        <td>低功耗优化，抗干扰</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5.4</strong></td>
+                        <td>2023</td>
+                        <td>PAwR, ESL, 加密广播</td>
+                        <td>电子货架标签，双向通信</td>
                     </tr>
                 </tbody>
             </table>
 
-            <h3>快速理解指南</h3>
-
-            <h4>📊 蓝牙版本演进图</h4>
-            <div class="timeline">
-                <div class="timeline-item">
-                    <div class="timeline-year">1999</div>
-                    <div class="timeline-content">
-                        <h4>蓝牙 1.0</h4>
-                        <p>首次发布，1Mbps</p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-year">2004</div>
-                    <div class="timeline-content">
-                        <h4>蓝牙 2.0 + EDR</h4>
-                        <p>增强数据率 3Mbps</p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-year">2009</div>
-                    <div class="timeline-content">
-                        <h4>蓝牙 3.0 + HS</h4>
-                        <p>高速 24Mbps</p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-year">2010</div>
-                    <div class="timeline-content">
-                        <h4>蓝牙 4.0 (BLE)</h4>
-                        <p>低功耗，1Mbps</p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-year">2016</div>
-                    <div class="timeline-content">
-                        <h4>蓝牙 5.0</h4>
-                        <p>2Mbps, Long Range, Mesh</p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-year">2020</div>
-                    <div class="timeline-content">
-                        <h4>蓝牙 5.2</h4>
-                        <p>LE Audio, LC3, Isochronous</p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-year">2023</div>
-                    <div class="timeline-content">
-                        <h4>蓝牙 5.4</h4>
-                        <p>PAwR, ESL, Encrypted Advertising</p>
-                    </div>
-                </div>
+            <h3>🔧 开发选型指南</h3>
+            
+            <h4>经典蓝牙 vs BLE 选择</h4>
+            <div class="mermaid">
+flowchart LR
+    Start[需求分析] --> Q1{需要传输什么？}
+    
+    Q1 -->|音频/大文件 | Classic[经典蓝牙]
+    Q1 -->|小数据/传感器 | BLE[BLE]
+    
+    Classic --> A1[A2DP 音频]
+    Classic --> A2[HFP 通话]
+    Classic --> A3[SPP 串口透传]
+    
+    BLE --> B1[GATT 服务]
+    BLE --> B2[广播 Beacon]
+    BLE --> B3[Mesh 组网]
+    
+    style Start fill:#007bff,color:#fff
+    style Q1 fill:#ffc107,color:#000
+    style Classic fill:#28a745,color:#fff
+    style BLE fill:#17a2b8,color:#fff
             </div>
 
-            <h4>🔑 核心概念速查表</h4>
             <table class="table">
                 <thead>
                     <tr>
-                        <th>概念</th>
+                        <th>特性</th>
+                        <th>经典蓝牙 (BR/EDR)</th>
+                        <th>低功耗蓝牙 (BLE)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>典型速率</strong></td>
+                        <td>1-3 Mbps</td>
+                        <td>125kbps - 2 Mbps</td>
+                    </tr>
+                    <tr>
+                        <td><strong>功耗</strong></td>
+                        <td>30mA (峰值)</td>
+                        <td>15mA (峰值), μA (待机)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>连接时间</strong></td>
+                        <td>数秒</td>
+                        <td>3-6ms</td>
+                    </tr>
+                    <tr>
+                        <td><strong>拓扑</strong></td>
+                        <td>点对点/点对多点</td>
+                        <td>广播/星型/Mesh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>典型应用</strong></td>
+                        <td>耳机、音箱、车载</td>
+                        <td>传感器、手环、Beacon</td>
+                    </tr>
+                    <tr>
+                        <td><strong>开发 SDK</strong></td>
+                        <td>BlueZ, Android Bluetooth</td>
+                        <td>Nordic SDK, Zephyr</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>芯片选型参考</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>厂商</th>
+                        <th>系列</th>
+                        <th>特点</th>
+                        <th>适用场景</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Nordic</strong></td>
+                        <td>nRF52/nRF53/nRF54</td>
+                        <td>生态完善，文档丰富</td>
+                        <td>通用 IoT 开发首选</td>
+                    </tr>
+                    <tr>
+                        <td><strong>TI</strong></td>
+                        <td>CC26xx</td>
+                        <td>低功耗，多协议</td>
+                        <td> Zigbee+BLE 双模</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Dialog</strong></td>
+                        <td>DA145xx</td>
+                        <td>超低功耗，小尺寸</td>
+                        <td>可穿戴设备</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Espressif</strong></td>
+                        <td>ESP32</td>
+                        <td>WiFi+BLE 双模，便宜</td>
+                        <td>物联网网关</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Qualcomm</strong></td>
+                        <td>QCC 系列</td>
+                        <td>音频优化，aptX</td>
+                        <td>TWS 耳机，音频设备</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Realtek</strong></td>
+                        <td>RTL876x</td>
+                        <td>性价比高</td>
+                        <td>消费电子产品</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>📋 核心概念速查</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>术语</th>
+                        <th>全称</th>
                         <th>说明</th>
-                        <th>开发重点</th>
+                        <th>开发相关</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td><strong>BR/EDR</strong></td>
-                        <td>经典蓝牙</td>
-                        <td>音频、文件传输</td>
+                        <td>Basic Rate / Enhanced Data Rate</td>
+                        <td>经典蓝牙传输模式</td>
+                        <td>音频、SPP 开发</td>
                     </tr>
                     <tr>
                         <td><strong>BLE</strong></td>
+                        <td>Bluetooth Low Energy</td>
                         <td>低功耗蓝牙</td>
-                        <td>IoT、可穿戴</td>
+                        <td>IoT 设备开发</td>
                     </tr>
                     <tr>
-                        <td><strong>GFSK</strong></td>
-                        <td>调制方式</td>
-                        <td>射频参数</td>
+                        <td><strong>GAP</strong></td>
+                        <td>Generic Access Profile</td>
+                        <td>设备发现、连接管理</td>
+                        <td>广播、扫描配置</td>
                     </tr>
                     <tr>
-                        <td><strong>FHSS</strong></td>
-                        <td>跳频扩频</td>
-                        <td>抗干扰</td>
+                        <td><strong>GATT</strong></td>
+                        <td>Generic Attribute Profile</td>
+                        <td>数据交换协议</td>
+                        <td>Service/Characteristic 定义</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PHY</strong></td>
+                        <td>Physical Layer</td>
+                        <td>物理层，射频收发</td>
+                        <td>1M/2M/Coded 选择</td>
+                    </tr>
+                    <tr>
+                        <td><strong>HCI</strong></td>
+                        <td>Host Controller Interface</td>
+                        <td>主机控制器接口</td>
+                        <td>AT 指令/USB 通信</td>
+                    </tr>
+                    <tr>
+                        <td><strong>MTU</strong></td>
+                        <td>Maximum Transmission Unit</td>
+                        <td>最大传输单元</td>
+                        <td>数据分包大小</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RSSI</strong></td>
+                        <td>Received Signal Strength Indicator</td>
+                        <td>接收信号强度</td>
+                        <td>距离估算、定位</td>
                     </tr>
                 </tbody>
             </table>
+
+            <h3>💻 开发者快速上手</h3>
+            
+            <h4>开发环境准备</h4>
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="android">Android</button>
+                    <button class="tab-btn" data-tab="ios">iOS</button>
+                    <button class="tab-btn" data-tab="linux">Linux</button>
+                    <button class="tab-btn" data-tab="embedded">嵌入式</button>
+                </div>
+
+                <div class="tab-content active" id="android">
+                    <h5>Android BLE 开发</h5>
+                    <pre><code class="language-xml">&lt;!-- AndroidManifest.xml --&gt;
+&lt;uses-permission android:name="android.permission.BLUETOOTH" /&gt;
+&lt;uses-permission android:name="android.permission.BLUETOOTH_ADMIN" /&gt;
+&lt;uses-permission android:name="android.permission.BLUETOOTH_SCAN" /&gt;
+&lt;uses-permission android:name="android.permission.BLUETOOTH_CONNECT" /&gt;
+&lt;uses-feature android:name="android.hardware.bluetooth_le" android:required="true" /&gt;</code></pre>
+                    <pre><code class="language-kotlin">// Kotlin - 扫描设备
+val scanner = bluetoothAdapter.bluetoothLeScanner
+val scanCallback = object : ScanCallback() {
+    override fun onScanResult(callbackType: Int, result: ScanResult) {
+        val device = result.device
+        Log.d("BLE", "发现设备：${device.name} - ${device.address}")
+    }
+}
+scanner.startScan(scanCallback)</code></pre>
+                </div>
+
+                <div class="tab-content" id="ios">
+                    <h5>iOS CoreBluetooth 开发</h5>
+                    <pre><code class="language-swift">// Info.plist
+&lt;key&gt;NSBluetoothAlwaysUsageDescription&lt;/key&gt;
+&lt;string&gt;需要使用蓝牙连接设备&lt;/string&gt;
+&lt;key&gt;NSBluetoothPeripheralUsageDescription&lt;/key&gt;
+&lt;string&gt;需要连接蓝牙外设&lt;/string&gt;</code></pre>
+                    <pre><code class="language-swift">// Swift - 扫描设备
+import CoreBluetooth
+
+class BLEManager: NSObject, CBCentralManagerDelegate {
+    var centralManager: CBCentralManager!
+    
+    func scan() {
+        centralManager = CBCentralManager(delegate: self, queue: nil)
+    }
+    
+    func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        if central.state == .poweredOn {
+            centralManager.scanForPeripherals(withServices: nil)
+        }
+    }
+}</code></pre>
+                </div>
+
+                <div class="tab-content" id="linux">
+                    <h5>Linux BlueZ 开发</h5>
+                    <pre><code class="language-bash"># 安装 BlueZ
+sudo apt-get install bluez bluez-tools
+
+# 蓝牙控制命令
+bluetoothctl  # 进入交互模式
+scan on       # 扫描设备
+pair XX:XX:XX:XX:XX:XX  # 配对
+connect XX:XX:XX:XX:XX:XX  # 连接</code></pre>
+                    <pre><code class="language-python"># Python - bleak 库
+import asyncio
+from bleak import BleakScanner
+
+async def scan():
+    devices = await BleakScanner.discover()
+    for d in devices:
+        print(f"{d.name}: {d.address}")
+
+asyncio.run(scan())</code></pre>
+                </div>
+
+                <div class="tab-content" id="embedded">
+                    <h5>嵌入式 Nordic nRF52 开发</h5>
+                    <pre><code class="language-c">// main.c - BLE 初始化
+#include "nrf_ble_gatt.h"
+#include "nrf_ble_qwr.h"
+
+void ble_stack_init(void) {
+    ret_code_t err_code;
+    
+    // 启用 SoftDevice
+    nrf_clock_lf_cfg_t clock_cfg = NRF_CLOCK_LFCLK_RC;
+    SOFTDEVICE_HANDLER_INIT(&clock_cfg, NULL);
+    
+    // 启用 BLE
+    ble_enable_params_t ble_enable_params;
+    ble_cfg_t ble_cfg;
+    
+    // 配置 GAP
+    ble_cfg.conn_cfg.conn_cfg_tag = 1;
+    ble_cfg.conn_cfg.params.gap_conn_cfg.min_conn_interval = 7.5;
+    ble_cfg.conn_cfg.params.gap_conn_cfg.max_conn_interval = 15;
+    
+    sd_ble_cfg_set(BLE_CONN_CFG_GAP, &ble_cfg, RAM_START);
+    sd_ble_enable(&ram_start);
+}</code></pre>
+                </div>
+            </div>
+
+            <h3>🔍 调试工具推荐</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3>手机 App</h3>
+                    <ul>
+                        <li><strong>nRF Connect</strong> -  Nordic 官方，功能最全</li>
+                        <li><strong>LightBlue</strong> - iOS 首选，界面友好</li>
+                        <li><strong>BLE Scanner</strong> - 跨平台，开源</li>
+                        <li><strong>Android 蓝牙日志</strong> - adb logcat -s Bluetooth</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>PC 工具</h3>
+                    <ul>
+                        <li><strong>nRF Connect Desktop</strong> - 桌面版调试工具</li>
+                        <li><strong>Wireshark + Ubertooth</strong> - 空口抓包</li>
+                        <li><strong>Ellisys</strong> - 专业协议分析 (昂贵)</li>
+                        <li><strong>Frontline</strong> - 协议分析仪</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>开发板</h3>
+                    <ul>
+                        <li><strong>nRF52840 DK</strong> - Nordic 官方开发板</li>
+                        <li><strong>ESP32 DevKit</strong> - 便宜，WiFi+BLE</li>
+                        <li><strong>CC2650 LaunchPad</strong> - TI 开发板</li>
+                        <li><strong>Ubertooth One</strong> - 开源抓包硬件</li>
+                    </ul>
+                </div>
+            </div>
         </section>
     </main>
 
     <script src="../js/script.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            sequence: {
+                actorMargin: 50,
+                boxMargin: 10,
+                messageMargin: 40,
+                showSequenceNumbers: true
+            }
+        });
+    </script>
 </body>
 </html>
