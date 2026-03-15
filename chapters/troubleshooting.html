@@ -1,67 +1,97 @@
-<section id="troubleshooting" class="section section-gray">
-    <h2>开发排错指南</h2>
-
-    <h3>常见问题与解决方案</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>问题</th>
-                <th>可能原因</th>
-                <th>解决方案</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>设备无法被发现</td>
-                <td>未开启广播/距离过远</td>
-                <td>检查广播参数/缩短距离</td>
-            </tr>
-            <tr>
-                <td>连接经常断开</td>
-                <td>参数不当/信号弱</td>
-                <td>调整interval/latency</td>
-            </tr>
-            <tr>
-                <td>数据发送失败</td>
-                <td>MTU不匹配/特征值属性</td>
-                <td>协商MTU/检查属性</td>
-            </tr>
-            <tr>
-                <td>配对失败</td>
-                <td>IO能力不匹配</td>
-                <td>检查配对参数</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <h3>调试工具</h3>
-    <div class="grid">
-        <div class="card">
-            <h3>Android</h3>
-            <ul>
-                <li>nRF Connect</li>
-                <li>BLE Scanner</li>
-                <li>HCI Log</li>
-            </ul>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>开发排错指南 - 蓝牙协议开发教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">📡</span>
+            <span class="sidebar-title">蓝牙开发</span>
         </div>
-        <div class="card">
-            <h3>iOS</h3>
-            <ul>
-                <li>LightBlue</li>
-                <li>BlueCarbon</li>
-            </ul>
-        </div>
-        <div class="card">
-            <h3>PC</h3>
-            <ul>
-                <li>nRF Connect Desktop</li>
-                <li>Wireshark (BTVS)</li>
-            </ul>
-        </div>
-    </div>
+        <ul class="tree-nav">
+            <li><a href="intro.html">蓝牙核心</a></li>
+            <li><a href="protocol-stack.html">协议栈</a></li>
+            <li><a href="connection.html">连接管理</a></li>
+            <li><a href="data.html">GATT 传输</a></li>
+            <li><a href="ble.html">BLE 开发</a></li>
+            <li><a href="security.html">安全机制</a></li>
+            <li><a href="troubleshooting.html" class="active">排错指南</a></li>
+            <li><a href="comparison.html">技术对比</a></li>
+            <li><a href="../index.html">返回首页</a></li>
+        </ul>
+    </nav>
 
-    <h3>调试日志示例</h3>
-    <pre><code>// BLE 连接日志分析
+    <main class="main">
+        <section class="section section-gray">
+            <h2>开发排错指南</h2>
+
+            <h3>常见问题与解决方案</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>问题</th>
+                        <th>可能原因</th>
+                        <th>解决方案</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>设备无法被发现</td>
+                        <td>未开启广播/距离过远</td>
+                        <td>检查广播参数/缩短距离</td>
+                    </tr>
+                    <tr>
+                        <td>连接经常断开</td>
+                        <td>参数不当/信号弱</td>
+                        <td>调整 interval/latency</td>
+                    </tr>
+                    <tr>
+                        <td>数据发送失败</td>
+                        <td>MTU 不匹配/特征值属性</td>
+                        <td>协商 MTU/检查属性</td>
+                    </tr>
+                    <tr>
+                        <td>配对失败</td>
+                        <td>IO 能力不匹配</td>
+                        <td>检查配对参数</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>调试工具</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3>Android</h3>
+                    <ul>
+                        <li>nRF Connect</li>
+                        <li>BLE Scanner</li>
+                        <li>HCI Log</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>iOS</h3>
+                    <ul>
+                        <li>LightBlue</li>
+                        <li>BlueCarbon</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>PC</h3>
+                    <ul>
+                        <li>nRF Connect Desktop</li>
+                        <li>Wireshark (BTVS)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>调试日志示例</h3>
+            <pre><code>// BLE 连接日志分析
 [D] GAP: Start advertising
 [D] GAP: Connected (handle=0)
 [D] GATT: MTU exchanged (517)
@@ -69,4 +99,10 @@
 [D] ATT: Write Request (handle=0x0003)
 [D] ATT: Write Response
 [D] GAP: Connection parameters updated</code></pre>
-</section>
+        </section>
+    </main>
+
+    <script src="../js/script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+</body>
+</html>

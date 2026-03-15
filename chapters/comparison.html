@@ -1,90 +1,126 @@
-<section id="comparison" class="section">
-    <h2>技术对比与选型</h2>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技术对比与选型 - 蓝牙协议开发教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">📡</span>
+            <span class="sidebar-title">蓝牙开发</span>
+        </div>
+        <ul class="tree-nav">
+            <li><a href="intro.html">蓝牙核心</a></li>
+            <li><a href="protocol-stack.html">协议栈</a></li>
+            <li><a href="connection.html">连接管理</a></li>
+            <li><a href="data.html">GATT 传输</a></li>
+            <li><a href="ble.html">BLE 开发</a></li>
+            <li><a href="security.html">安全机制</a></li>
+            <li><a href="troubleshooting.html">排错指南</a></li>
+            <li><a href="comparison.html" class="active">技术对比</a></li>
+            <li><a href="../index.html">返回首页</a></li>
+        </ul>
+    </nav>
 
-    <h3>蓝牙 vs 其他协议</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>协议</th>
-                <th>频段</th>
-                <th>速率</th>
-                <th>功耗</th>
-                <th>范围</th>
-                <th>典型应用</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>BLE</strong></td>
-                <td>2.4GHz</td>
-                <td>1-2Mbps</td>
-                <td>极低</td>
-                <td>10-100m</td>
-                <td>IoT、可穿戴</td>
-            </tr>
-            <tr>
-                <td><strong>经典蓝牙</strong></td>
-                <td>2.4GHz</td>
-                <td>1-3Mbps</td>
-                <td>中</td>
-                <td>10-100m</td>
-                <td>音频、文件</td>
-            </tr>
-            <tr>
-                <td><strong>WiFi</strong></td>
-                <td>2.4/5GHz</td>
-                <td>100+Mbps</td>
-                <td>高</td>
-                <td>10-50m</td>
-                <td>上网、视频</td>
-            </tr>
-            <tr>
-                <td><strong>Zigbee</strong></td>
-                <td>2.4GHz</td>
-                <td>250kbps</td>
-                <td>低</td>
-                <td>10-100m</td>
-                <td>智能家居</td>
-            </tr>
-            <tr>
-                <td><strong>LoRa</strong></td>
-                <td>433MHz-868MHz</td>
-                <td>0.3-50kbps</td>
-                <td>极低</td>
-                <td>2-15km</td>
-                <td>远距传感</td>
-            </tr>
-        </tbody>
-    </table>
+    <main class="main">
+        <section class="section">
+            <h2>技术对比与选型</h2>
 
-    <h3>协议选型指南</h3>
-    <div class="grid">
-        <div class="card">
-            <h3>选BLE</h3>
-            <ul>
-                <li>电池供电设备</li>
-                <li>简单数据传输</li>
-                <li>IoT传感器</li>
-                <li>手机配对</li>
-            </ul>
-        </div>
-        <div class="card">
-            <h3>选经典蓝牙</h3>
-            <ul>
-                <li>音频传输(A2DP)</li>
-                <li>大文件传输</li>
-                <li>串口透传(SPP)</li>
-                <li>兼容老设备</li>
-            </ul>
-        </div>
-        <div class="card">
-            <h3>选WiFi</h3>
-            <ul>
-                <li>高速数据传输</li>
-                <li>视频流</li>
-                <li>互联网接入</li>
-                <li>有电源设备</li>
-            </ul>
-        </div>
-    </div>
-</section>
+            <h3>蓝牙 vs 其他协议</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>协议</th>
+                        <th>频段</th>
+                        <th>速率</th>
+                        <th>功耗</th>
+                        <th>范围</th>
+                        <th>典型应用</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>BLE</strong></td>
+                        <td>2.4GHz</td>
+                        <td>1-2Mbps</td>
+                        <td>极低</td>
+                        <td>10-100m</td>
+                        <td>IoT、可穿戴</td>
+                    </tr>
+                    <tr>
+                        <td><strong>经典蓝牙</strong></td>
+                        <td>2.4GHz</td>
+                        <td>1-3Mbps</td>
+                        <td>中</td>
+                        <td>10-100m</td>
+                        <td>音频、文件</td>
+                    </tr>
+                    <tr>
+                        <td><strong>WiFi</strong></td>
+                        <td>2.4/5GHz</td>
+                        <td>100+Mbps</td>
+                        <td>高</td>
+                        <td>10-50m</td>
+                        <td>上网、视频</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Zigbee</strong></td>
+                        <td>2.4GHz</td>
+                        <td>250kbps</td>
+                        <td>低</td>
+                        <td>10-100m</td>
+                        <td>智能家居</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LoRa</strong></td>
+                        <td>433MHz-868MHz</td>
+                        <td>0.3-50kbps</td>
+                        <td>极低</td>
+                        <td>2-15km</td>
+                        <td>远距传感</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>协议选型指南</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3>选 BLE</h3>
+                    <ul>
+                        <li>电池供电设备</li>
+                        <li>简单数据传输</li>
+                        <li>IoT 传感器</li>
+                        <li>手机配对</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>选经典蓝牙</h3>
+                    <ul>
+                        <li>音频传输 (A2DP)</li>
+                        <li>大文件传输</li>
+                        <li>串口透传 (SPP)</li>
+                        <li>兼容老设备</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>选 WiFi</h3>
+                    <ul>
+                        <li>高速数据传输</li>
+                        <li>视频流</li>
+                        <li>互联网接入</li>
+                        <li>有电源设备</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="../js/script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+</body>
+</html>

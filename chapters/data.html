@@ -1,99 +1,129 @@
-<section id="data" class="section section-gray">
-    <h2>GATT数据传输</h2>
-
-    <h3>数据传输模式</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>模式</th>
-                <th>ATT Opcode</th>
-                <th>确认</th>
-                <th>适用场景</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>Read</strong></td>
-                <td>0x0A/0x0B</td>
-                <td>需要</td>
-                <td>配置读取、状态查询</td>
-            </tr>
-            <tr>
-                <td><strong>Write</strong></td>
-                <td>0x12/0x13</td>
-                <td>需要</td>
-                <td>控制指令、写入确认</td>
-            </tr>
-            <tr>
-                <td><strong>Write Without Response</strong></td>
-                <td>0x52</td>
-                <td>不需要</td>
-                <td>大数据流、按键事件</td>
-            </tr>
-            <tr>
-                <td><strong>Notify</strong></td>
-                <td>0x1B</td>
-                <td>不需要</td>
-                <td>传感器数据、心率</td>
-            </tr>
-            <tr>
-                <td><strong>Indicate</strong></td>
-                <td>0x1D</td>
-                <td>需要</td>
-                <td>重要告警、OTA升级</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <h3>📊 MTU协商</h3>
-    <pre><code>// MTU: 默认23 bytes, BLE 5.0最大512 bytes
-// 性能对比:
-// MTU=23: 每次传输20字节
-// MTU=512: 每次传输509字节 (提升25倍)</code></pre>
-
-    <h3>📊 常用UUID</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>服务/特征</th>
-                <th>UUID</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>电池服务</td>
-                <td>180f</td>
-            </tr>
-            <tr>
-                <td>电池电量</td>
-                <td>2a19</td>
-            </tr>
-            <tr>
-                <td>心率服务</td>
-                <td>180d</td>
-            </tr>
-            <tr>
-                <td>心率测量</td>
-                <td>2a37</td>
-            </tr>
-            <tr>
-                <td>设备信息</td>
-                <td>180a</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <h3>跨平台代码示例</h3>
-    <div class="tab-container">
-        <div class="tab-buttons">
-            <button class="tab-btn active" data-tab="python">Python</button>
-            <button class="tab-btn" data-tab="golang">GoLang</button>
-            <button class="tab-btn" data-tab="miniprogram">微信小程序</button>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GATT 数据传输 - 蓝牙协议开发教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">📡</span>
+            <span class="sidebar-title">蓝牙开发</span>
         </div>
+        <ul class="tree-nav">
+            <li><a href="intro.html">蓝牙核心</a></li>
+            <li><a href="protocol-stack.html">协议栈</a></li>
+            <li><a href="connection.html">连接管理</a></li>
+            <li><a href="data.html" class="active">GATT 传输</a></li>
+            <li><a href="ble.html">BLE 开发</a></li>
+            <li><a href="security.html">安全机制</a></li>
+            <li><a href="troubleshooting.html">排错指南</a></li>
+            <li><a href="comparison.html">技术对比</a></li>
+            <li><a href="../index.html">返回首页</a></li>
+        </ul>
+    </nav>
 
-        <div class="tab-content active" id="python">
-            <pre><code># Python - bleak库
-import asyncio
+    <main class="main">
+        <section class="section section-gray">
+            <h2>GATT 数据传输</h2>
+
+            <h3>数据传输模式</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>模式</th>
+                        <th>ATT Opcode</th>
+                        <th>确认</th>
+                        <th>适用场景</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Read</strong></td>
+                        <td>0x0A/0x0B</td>
+                        <td>需要</td>
+                        <td>配置读取、状态查询</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Write</strong></td>
+                        <td>0x12/0x13</td>
+                        <td>需要</td>
+                        <td>控制指令、写入确认</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Write Without Response</strong></td>
+                        <td>0x52</td>
+                        <td>不需要</td>
+                        <td>大数据流、按键事件</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Notify</strong></td>
+                        <td>0x1B</td>
+                        <td>不需要</td>
+                        <td>传感器数据、心率</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Indicate</strong></td>
+                        <td>0x1D</td>
+                        <td>需要</td>
+                        <td>重要告警、OTA 升级</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>📊 MTU 协商</h3>
+            <pre><code>// MTU: 默认 23 bytes, BLE 5.0 最大 512 bytes
+// 性能对比:
+// MTU=23: 每次传输 20 字节
+// MTU=512: 每次传输 509 字节 (提升 25 倍)</code></pre>
+
+            <h3>📊 常用 UUID</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>服务/特征</th>
+                        <th>UUID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>电池服务</td>
+                        <td>180f</td>
+                    </tr>
+                    <tr>
+                        <td>电池电量</td>
+                        <td>2a19</td>
+                    </tr>
+                    <tr>
+                        <td>心率服务</td>
+                        <td>180d</td>
+                    </tr>
+                    <tr>
+                        <td>心率测量</td>
+                        <td>2a37</td>
+                    </tr>
+                    <tr>
+                        <td>设备信息</td>
+                        <td>180a</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>跨平台代码示例</h3>
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="python">Python</button>
+                    <button class="tab-btn" data-tab="golang">GoLang</button>
+                    <button class="tab-btn" data-tab="miniprogram">微信小程序</button>
+                </div>
+
+                <div class="tab-content active" id="python">
+                    <h4>Python - bleak 库</h4>
+                    <pre><code class="language-python">import asyncio
 from bleak import BleakClient
 
 async def ble_demo():
@@ -104,23 +134,30 @@ async def ble_demo():
     # 通知
     await client.start_notify("2a37", callback)
     await asyncio.sleep(10)</code></pre>
-        </div>
+                </div>
 
-        <div class="tab-content" id="golang">
-            <pre><code>// Go - go-ble库
-import "github.com/go-ble/ble"
+                <div class="tab-content" id="golang">
+                    <h4>Go - go-ble 库</h4>
+                    <pre><code class="language-go">import "github.com/go-ble/ble"
 
 cln, err := ble.Connect(ctx, addr)
 chars, _ := cln.DiscoverCharacteristics(nil, svc)
 cln.Read(chars[0])</code></pre>
-        </div>
+                </div>
 
-        <div class="tab-content" id="miniprogram">
-            <pre><code>// 微信小程序
+                <div class="tab-content" id="miniprogram">
+                    <h4>微信小程序</h4>
+                    <pre><code class="language-javascript">// 微信小程序
 wx.createBLEConnection({ deviceId })
 wx.getBLEDeviceServices({ deviceId })
 wx.notifyBLECharacteristicValueChange({ ... })
 wx.onBLECharacteristicValueChange(cb)</code></pre>
-        </div>
-    </div>
-</section>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="../js/script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+</body>
+</html>

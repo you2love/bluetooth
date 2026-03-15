@@ -1,66 +1,102 @@
-<section id="security" class="section section-gray">
-    <h2>安全机制</h2>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安全机制 - 蓝牙协议开发教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">📡</span>
+            <span class="sidebar-title">蓝牙开发</span>
+        </div>
+        <ul class="tree-nav">
+            <li><a href="intro.html">蓝牙核心</a></li>
+            <li><a href="protocol-stack.html">协议栈</a></li>
+            <li><a href="connection.html">连接管理</a></li>
+            <li><a href="data.html">GATT 传输</a></li>
+            <li><a href="ble.html">BLE 开发</a></li>
+            <li><a href="security.html" class="active">安全机制</a></li>
+            <li><a href="troubleshooting.html">排错指南</a></li>
+            <li><a href="comparison.html">技术对比</a></li>
+            <li><a href="../index.html">返回首页</a></li>
+        </ul>
+    </nav>
 
-    <h3>配对流程</h3>
-    <pre><code>// BLE 配对流程 (LE Secure Connections)
+    <main class="main">
+        <section class="section section-gray">
+            <h2>安全机制</h2>
+
+            <h3>配对流程</h3>
+            <pre><code>// BLE 配对流程 (LE Secure Connections)
 // Phase 1: 能力交换 (Capability Exchange)
-// Phase 2: 公钥交换 (Public Key Exchange)  
+// Phase 2: 公钥交换 (Public Key Exchange)
 // Phase 3: 认证 (Authentication)
 // Phase 4: 密钥分发 (Key Distribution)</code></pre>
 
-    <h3>安全级别</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Mode</th>
-                <th>Level</th>
-                <th>加密</th>
-                <th>认证</th>
-                <th>场景</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Mode 1</td>
-                <td>Level 1</td>
-                <td>无</td>
-                <td>无</td>
-                <td>Beacon</td>
-            </tr>
-            <tr>
-                <td>Mode 1</td>
-                <td>Level 3</td>
-                <td>加密</td>
-                <td>未认证</td>
-                <td>经典配对</td>
-            </tr>
-            <tr>
-                <td>Mode 1</td>
-                <td>Level 4</td>
-                <td>加密</td>
-                <td>MITM</td>
-                <td>安全连接</td>
-            </tr>
-        </tbody>
-    </table>
+            <h3>安全级别</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Mode</th>
+                        <th>Level</th>
+                        <th>加密</th>
+                        <th>认证</th>
+                        <th>场景</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Mode 1</td>
+                        <td>Level 1</td>
+                        <td>无</td>
+                        <td>无</td>
+                        <td>Beacon</td>
+                    </tr>
+                    <tr>
+                        <td>Mode 1</td>
+                        <td>Level 3</td>
+                        <td>加密</td>
+                        <td>未认证</td>
+                        <td>经典配对</td>
+                    </tr>
+                    <tr>
+                        <td>Mode 1</td>
+                        <td>Level 4</td>
+                        <td>加密</td>
+                        <td>MITM</td>
+                        <td>安全连接</td>
+                    </tr>
+                </tbody>
+            </table>
 
-    <h3>加密算法</h3>
-    <div class="grid">
-        <div class="card">
-            <h3>LE Legacy</h3>
-            <ul>
-                <li>加密: AES-CCM</li>
-                <li>密钥: TK</li>
-                <li>已淘汰</li>
-            </ul>
-        </div>
-        <div class="card">
-            <h3>LE Secure Connections</h3>
-            <ul>
-                <li>加密: AES-CCM</li>
-                <li>密钥: P-256 ECDH</li>
-                <li>强制配对</li>
-            </ul>
-        </div>
-    </div>
-</section>
+            <h3>加密算法</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3>LE Legacy</h3>
+                    <ul>
+                        <li>加密：AES-CCM</li>
+                        <li>密钥：TK</li>
+                        <li>已淘汰</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>LE Secure Connections</h3>
+                    <ul>
+                        <li>加密：AES-CCM</li>
+                        <li>密钥：P-256 ECDH</li>
+                        <li>强制配对</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="../js/script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+</body>
+</html>

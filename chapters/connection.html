@@ -1,64 +1,100 @@
-<section id="connection" class="section">
-    <h2>连接管理</h2>
-
-    <h3>连接参数详解</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>参数</th>
-                <th>范围</th>
-                <th>典型场景</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>interval</strong></td>
-                <td>7.5ms - 4s</td>
-                <td>实时:7.5ms, 传感器:1s</td>
-            </tr>
-            <tr>
-                <td><strong>slave_latency</strong></td>
-                <td>0 - 499</td>
-                <td>省电:99, 低延迟:0</td>
-            </tr>
-            <tr>
-                <td><strong>supervision_timeout</strong></td>
-                <td>100ms - 32s</td>
-                <td>100ms - 32s</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <h3>参数计算</h3>
-    <pre><code>// 条件: timeout > (1 + latency) * interval * 2
-// 传感器: interval=1s, latency=99, timeout=10s OK
-// 音频: interval=7.5ms, latency=0, timeout=500ms OK</code></pre>
-
-    <h3>连接优化场景</h3>
-    <div class="grid">
-        <div class="card">
-            <h3>低延迟</h3>
-            <ul>
-                <li>interval: 7.5-15ms</li>
-                <li>latency: 0</li>
-                <li>场景: 游戏、遥控器</li>
-            </ul>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>连接管理 - 蓝牙协议开发教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">📡</span>
+            <span class="sidebar-title">蓝牙开发</span>
         </div>
-        <div class="card">
-            <h3>平衡</h3>
-            <ul>
-                <li>interval: 30-50ms</li>
-                <li>latency: 0-4</li>
-                <li>场景: 键盘、鼠标</li>
-            </ul>
-        </div>
-        <div class="card">
-            <h3>低功耗</h3>
-            <ul>
-                <li>interval: 1-4s</li>
-                <li>latency: 50-99</li>
-                <li>场景: 传感器、手环</li>
-            </ul>
-        </div>
-    </div>
-</section>
+        <ul class="tree-nav">
+            <li><a href="intro.html">蓝牙核心</a></li>
+            <li><a href="protocol-stack.html">协议栈</a></li>
+            <li><a href="connection.html" class="active">连接管理</a></li>
+            <li><a href="data.html">GATT 传输</a></li>
+            <li><a href="ble.html">BLE 开发</a></li>
+            <li><a href="security.html">安全机制</a></li>
+            <li><a href="troubleshooting.html">排错指南</a></li>
+            <li><a href="comparison.html">技术对比</a></li>
+            <li><a href="../index.html">返回首页</a></li>
+        </ul>
+    </nav>
+
+    <main class="main">
+        <section class="section">
+            <h2>连接管理</h2>
+
+            <h3>连接参数详解</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>参数</th>
+                        <th>范围</th>
+                        <th>典型场景</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>interval</strong></td>
+                        <td>7.5ms - 4s</td>
+                        <td>实时：7.5ms, 传感器：1s</td>
+                    </tr>
+                    <tr>
+                        <td><strong>slave_latency</strong></td>
+                        <td>0 - 499</td>
+                        <td>省电：99, 低延迟：0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>supervision_timeout</strong></td>
+                        <td>100ms - 32s</td>
+                        <td>100ms - 32s</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>参数计算</h3>
+            <pre><code>// 条件：timeout > (1 + latency) * interval * 2
+// 传感器：interval=1s, latency=99, timeout=10s OK
+// 音频：interval=7.5ms, latency=0, timeout=500ms OK</code></pre>
+
+            <h3>连接优化场景</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3>低延迟</h3>
+                    <ul>
+                        <li>interval: 7.5-15ms</li>
+                        <li>latency: 0</li>
+                        <li>场景：游戏、遥控器</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>平衡</h3>
+                    <ul>
+                        <li>interval: 30-50ms</li>
+                        <li>latency: 0-4</li>
+                        <li>场景：键盘、鼠标</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>低功耗</h3>
+                    <ul>
+                        <li>interval: 1-4s</li>
+                        <li>latency: 50-99</li>
+                        <li>场景：传感器、手环</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="../js/script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+</body>
+</html>
