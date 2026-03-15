@@ -114,6 +114,318 @@ uint8_t gps_data[] = {
     0x00, 0x00, 0x00, 0x00  // Timestamp: UTC
 };</code></pre>
 
+            <h3>🔧 GPS 数据包构建详解</h3>
+            <p class="lead">从 GPS 原始数据到蓝牙空中传输，每一层如何添加头部，组合成完整的数据包。</p>
+
+            <h4>数据包组合流程</h4>
+            <div class="mermaid">
+flowchart TB
+    subgraph Step1["步骤 1: GPS 原始数据"]
+        A1["经纬度 + 海拔<br/>速度 + 卫星数"]
+    end
+    
+    subgraph Step2["步骤 2: GATT 层"]
+        A2["特征值句柄 + 位置数据"]
+    end
+    
+    subgraph Step3["步骤 3: ATT 层"]
+        A3["Opcode + Handle + Data"]
+    end
+    
+    subgraph Step4["步骤 4: L2CAP 层"]
+        A4["L2CAP Header<br/>Length + CID"]
+    end
+    
+    subgraph Step5["步骤 5: HCI 层"]
+        A5["HCI ACL Header<br/>Handle + Length"]
+    end
+    
+    subgraph Step6["步骤 6: LL 层"]
+        A6["LL Header + MIC + CRC"]
+    end
+    
+    subgraph Step7["步骤 7: PHY 层"]
+        A7["前导码 + 访问地址<br/>+ Payload + CRC"]
+    end
+    
+    A1 --> A2
+    A2 --> A3
+    A3 --> A4
+    A4 --> A5
+    A5 --> A6
+    A6 --> A7
+    
+    style Step1 fill:#d4edda,stroke:#28a745
+    style Step2 fill:#e3f2fd,stroke:#007bff
+    style Step3 fill:#e3f2fd,stroke:#007bff
+    style Step4 fill:#e3f2fd,stroke:#007bff
+    style Step5 fill:#fff3cd,stroke:#ffc107
+    style Step6 fill:#d4edda,stroke:#28a745
+    style Step7 fill:#d4edda,stroke:#28a745
+            </div>
+
+            <h4>逐步构建过程</h4>
+            <pre><code class="language-c">// ========== 步骤 1: GPS 原始数据 ==========
+// 从 GNSS 模块解析到的位置信息
+int32_t latitude = 39904200;    // 39.9042° N (乘以 1e7)
+int32_t longitude = 116407400;  // 116.4074° E
+int16_t altitude = 50;          // 海拔 50 米
+uint8_t speed = 90;             // 9.0 m/s (乘以 10)
+uint8_t satellites = 8;         // 8 颗卫星
+uint32_t timestamp = 1234567890;// UTC 时间戳
+
+// ========== 步骤 2: GATT 层封装 ==========
+// 构建位置数据结构 (20 bytes)
+uint8_t gps_payload[20] = {
+    0x03,                   // [0] Flags: 3D fix + motion
+    // 纬度 (小端序)
+    0x00, 0xD9, 0x04, 0x19, // [1-4] 39.9042° N
+    // 经度 (小端序)
+    0x00, 0x7D, 0x39, 0x07, // [5-8] 116.4074° E
+    // 海拔 (小端序)
+    0x32, 0x00,             // [9-10] 50m
+    // 速度
+    0x5A,                   // [11] 9.0 m/s
+    // 卫星数
+    0x08,                   // [12] 8 颗
+    // 时间戳 (小端序)
+    0xD2, 0x02, 0x96, 0x49  // [13-16] 1234567890
+};
+// GATT 数据总长度：17 bytes (实际使用)
+
+// 特征值句柄
+uint16_t location_handle = 0x0023;  // 位置特征值句柄
+
+// ========== 步骤 3: ATT 层封装 ==========
+// 添加 ATT Header (Opcode + Handle)
+uint8_t att_packet[] = {
+    0x1B,                   // [0] Opcode: Handle Value Notification
+    0x23, 0x00,             // [1-2] Handle: 0x0023 (小端序)
+    // GATT 数据 (从步骤 2)
+    0x03, 0x00, 0xD9, 0x04, 0x19, 0x00, 0x7D, 0x39, 
+    0x07, 0x32, 0x00, 0x5A, 0x08, 0xD2, 0x02, 0x96, 0x49
+};
+// ATT 层总长度：20 bytes
+
+// ========== 步骤 4: L2CAP 层封装 ==========
+// 添加 L2CAP Header (Length + CID)
+uint8_t l2cap_packet[] = {
+    0x14, 0x00,             // [0-1] Length: 20 (ATT 包长度)
+    0x04, 0x00,             // [2-3] CID: 0x0004 (ATT 信道)
+    // ATT Packet (从步骤 3)
+    0x1B, 0x23, 0x00, 0x03, 0x00, 0xD9, 0x04, 0x19,
+    0x00, 0x7D, 0x39, 0x07, 0x32, 0x00, 0x5A, 0x08,
+    0xD2, 0x02, 0x96, 0x49
+};
+// L2CAP 层总长度：24 bytes
+
+// ========== 步骤 5: HCI ACL 层封装 ==========
+// 添加 HCI ACL Header (Handle + Data Length)
+uint8_t hci_packet[] = {
+    0x01, 0x00,             // [0-1] Handle: 0x0001 (连接句柄)
+    0x18, 0x00,             // [2-3] Data Length: 24 (L2CAP 包长度)
+    // L2CAP Packet (从步骤 4)
+    0x14, 0x00, 0x04, 0x00, 0x1B, 0x23, 0x00, 0x03,
+    0x00, 0xD9, 0x04, 0x19, 0x00, 0x7D, 0x39, 0x07,
+    0x32, 0x00, 0x5A, 0x08, 0xD2, 0x02, 0x96, 0x49
+};
+// HCI 层总长度：28 bytes
+
+// ========== 步骤 6: Link Layer 封装 ==========
+// LL 层添加：LL Header + MIC(加密) + CRC
+// LL Data PDU 结构:
+// +----------+------------+---------+-----+
+// | LL Header| LL Payload | MIC(4B) | CRC |
+// | (2B)     | (0-27B)    |         |(3B) |
+// +----------+------------+---------+-----+
+
+// LL Header (2 bytes)
+uint8_t ll_header[] = {
+    0x05,  // [0] LLID=01 (数据), NESN=0, SN=0, MD=0
+    0x18   // [1] Length: 24 bytes (HCI 数据长度)
+};
+
+// LL Payload = HCI Packet (28 bytes)
+// 注意：28 > 27-2-4-3 = 18，需要分段发送！
+
+// 分段 1 (LL PDU #1)
+uint8_t ll_pdu1[] = {
+    0x05, 0x1B,             // LL Header
+    // HCI 数据前 23 bytes
+    0x01, 0x00, 0x18, 0x00, 0x14, 0x00, 0x04, 0x00,
+    0x1B, 0x23, 0x00, 0x03, 0x00, 0xD9, 0x04, 0x19,
+    0x00, 0x7D, 0x39, 0x07, 0x32, 0x00, 0x5A,
+    // MIC (4 bytes, 如果启用加密)
+    0xA1, 0xB2, 0xC3, 0xD4,
+    // CRC (3 bytes)
+    0x12, 0x34, 0x56
+};
+
+// 分段 2 (LL PDU #2) - 剩余数据
+uint8_t ll_pdu2[] = {
+    0x01, 0x05,             // LL Header (LLID=00 继续)
+    // HCI 数据剩余 4 bytes
+    0x08, 0xD2, 0x02, 0x96, 0x49,
+    // MIC (4 bytes)
+    0xE5, 0xF6, 0x07, 0x18,
+    // CRC (3 bytes)
+    0x78, 0x9A, 0xBC
+};
+
+// ========== 步骤 7: PHY 层封装 ==========
+// PHY 添加：前导码 + 访问地址 + CRC
+// PHY Packet 结构:
+// +--------+----------+------------+-----+
+// | Preamble| Access  |   Payload  | CRC |
+// | (1B)   | Address  |  (LL PDU)  |     |
+// |        | (4B)     |            |     |
+// +--------+----------+------------+-----+
+
+uint8_t preamble = 0x55;              // 前导码 (01010101)
+uint32_t access_address = 0x8E89BED6; // 访问地址 (BLE 固定)
+// Payload = LL PDU (从步骤 6)
+// CRC 已在 LL 层计算</code></pre>
+
+            <h4>完整数据包结构图</h4>
+            <div class="mermaid">
+flowchart LR
+    subgraph PHY_Packet["PHY Packet (空中传输)"]
+        P1["Preamble<br/>1B"]
+        P2["Access Addr<br/>4B"]
+        P3["LL PDU<br/>可变"]
+        P4["CRC<br/>3B"]
+    end
+    
+    subgraph LL_PDU["LL PDU"]
+        L1["LL Header<br/>2B"]
+        L2["LL Payload<br/>0-27B"]
+        L3["MIC<br/>4B"]
+    end
+    
+    subgraph LL_Payload["LL Payload = HCI Packet"]
+        H1["HCI ACL Header<br/>4B"]
+        H2["L2CAP Packet<br/>可变"]
+    end
+    
+    subgraph L2CAP["L2CAP Packet"]
+        C1["L2CAP Header<br/>4B"]
+        C2["ATT PDU<br/>可变"]
+    end
+    
+    subgraph ATT["ATT PDU"]
+        A1["ATT Header<br/>3B"]
+        A2["GATT Data<br/>可变"]
+    end
+    
+    subgraph GATT["GATT Data"]
+        G1["Flags<br/>1B"]
+        G2["Latitude<br/>4B"]
+        G3["Longitude<br/>4B"]
+        G4["Altitude<br/>2B"]
+        G5["Speed<br/>1B"]
+        G6["Satellites<br/>1B"]
+        G7["Timestamp<br/>4B"]
+    end
+    
+    P3 --> LL_PDU
+    L2 --> LL_Payload
+    H2 --> L2CAP
+    C2 --> ATT
+    A2 --> GATT
+    
+    style PHY_Packet fill:#d4edda,stroke:#28a745
+    style LL_PDU fill:#e3f2fd,stroke:#007bff
+    style LL_Payload fill:#fff3cd,stroke:#ffc107
+    style L2CAP fill:#e3f2fd,stroke:#007bff
+    style ATT fill:#e3f2fd,stroke:#007bff
+    style GATT fill:#d4edda,stroke:#28a745
+            </div>
+
+            <h4>数据包大小计算</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>层</th>
+                        <th>头部大小</th>
+                        <th>数据大小</th>
+                        <th>本层总大小</th>
+                        <th>累计大小</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>GATT</strong></td>
+                        <td>0 B</td>
+                        <td>17 B (GPS 数据)</td>
+                        <td>17 B</td>
+                        <td>17 B</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ATT</strong></td>
+                        <td>3 B (Opcode+Handle)</td>
+                        <td>17 B (GATT)</td>
+                        <td>20 B</td>
+                        <td>20 B</td>
+                    </tr>
+                    <tr>
+                        <td><strong>L2CAP</strong></td>
+                        <td>4 B (Length+CID)</td>
+                        <td>20 B (ATT)</td>
+                        <td>24 B</td>
+                        <td>24 B</td>
+                    </tr>
+                    <tr>
+                        <td><strong>HCI ACL</strong></td>
+                        <td>4 B (Handle+Length)</td>
+                        <td>24 B (L2CAP)</td>
+                        <td>28 B</td>
+                        <td>28 B</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LL</strong></td>
+                        <td>2 B (Header)</td>
+                        <td>28 B (HCI)</td>
+                        <td>34 B (+MIC 4B +CRC 3B)</td>
+                        <td>41 B</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PHY</strong></td>
+                        <td>5 B (Preamble+Access)</td>
+                        <td>41 B (LL)</td>
+                        <td>46 B (+CRC 3B)</td>
+                        <td>49 B</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><strong>注意:</strong> 由于 LL Payload 最大 27 bytes，28 bytes 的 HCI 数据需要<strong>分段发送</strong>(2 个 LL PDU)。</p>
+
+            <h4>实际字节流 (十六进制)</h4>
+            <pre><code class="language-bash"># 最终在空中传输的完整字节流 (从内到外):
+
+# 应用数据 (GPS 位置 17 bytes):
+03 00 D9 04 19 00 7D 39 07 32 00 5A 08 D2 02 96 49
+
+# + ATT Header (3 bytes):
+1B 23 00 03 00 D9 04 19 00 7D 39 07 32 00 5A 08 D2 02 96 49
+
+# + L2CAP Header (4 bytes):
+14 00 04 00 1B 23 00 03 00 D9 04 19 00 7D 39 07 32 00 5A 08 D2 02 96 49
+
+# + HCI ACL Header (4 bytes):
+18 00 14 00 04 00 1B 23 00 03 00 D9 04 19 00 7D 39 07 32 00 5A 08 D2 02 96 49
+
+# + LL Header + MIC + CRC (分段 1):
+05 1B 01 00 18 00 14 00 04 00 1B 23 00 03 00 D9 04 19 00 7D 39 07 32 00 5A A1 B2 C3 D4 12 34 56
+
+# + LL Header + MIC + CRC (分段 2):
+01 05 08 D2 02 96 49 E5 F6 07 18 78 9A BC
+
+# + PHY Preamble + Access Address:
+55 8E 89 BE D6 05 1B ... (分段 1)
+55 8E 89 BE D6 01 05 ... (分段 2)
+
+# 最终空中传输：约 49 bytes (分 2 个包)</code></pre>
+
             <h3>📈 完整工作流程</h3>
             <div class="mermaid">
 sequenceDiagram
