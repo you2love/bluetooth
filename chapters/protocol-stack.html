@@ -6,6 +6,7 @@
     <title>蓝牙协议栈 - 蓝牙协议开发教程</title>
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
 </head>
 <body>
@@ -29,165 +30,637 @@
     <main class="main">
         <section class="section section-gray">
             <h2>蓝牙协议栈</h2>
+            <p class="lead">从软件开发者角度理解蓝牙协议栈，掌握各层职责、数据包结构和 API 调用。</p>
 
-            <h3>分层架构图</h3>
-            <div class="layer-diagram">
-                <div class="layer-stack">
-                    <div class="layer layer-app">
-                        应用层 Profiles (GAP, GATT, ANP, HRP 等)
-                        <span class="layer-size">业务逻辑</span>
-                    </div>
-                    <div class="layer layer-deps">
-                        主机层 Host
-                        <span class="layer-size">L2CAP, ATT, SMP, GATT, GAP</span>
-                    </div>
-                    <div class="layer layer-runtime">
-                        主机控制器接口 HCI
-                        <span class="layer-size">UART/SPI/USB</span>
-                    </div>
-                    <div class="layer layer-os">
-                        控制器 Controller
-                        <span class="layer-size">Link Layer + PHY</span>
-                    </div>
-                </div>
+            <h3>📐 协议栈分层架构</h3>
+            <div class="mermaid">
+flowchart TD
+    subgraph Host["主机 Host (软件层)"]
+        App["应用层 Application<br/>业务逻辑 + Profiles"]
+        GATT["GATT 层<br/>服务/特征值管理"]
+        GAP["GAP 层<br/>广播/扫描/连接"]
+        ATT["ATT 层<br/>属性协议"]
+        SMP["SMP 层<br/>安全配对"]
+        L2CAP["L2CAP 层<br/>信道复用"]
+    end
+    
+    subgraph HCI["HCI 接口"]
+        HCI_CMD["HCI Command"]
+        HCI_EVT["HCI Event"]
+        HCI_ACL["HCI ACL Data"]
+    end
+    
+    subgraph Controller["控制器 Controller (固件层)"]
+        LL["Link Layer<br/>状态机 + 调度"]
+        PHY["PHY 层<br/>射频收发"]
+    end
+    
+    App --> GATT
+    GATT --> ATT
+    GAP --> ATT
+    ATT --> L2CAP
+    SMP --> L2CAP
+    L2CAP --> HCI_ACL
+    HCI_CMD --> HCI_EVT
+    HCI_ACL --> LL
+    HCI_CMD --> LL
+    LL --> PHY
+    
+    style Host fill:#e3f2fd,stroke:#007bff
+    style HCI fill:#fff3cd,stroke:#ffc107
+    style Controller fill:#d4edda,stroke:#28a745
+    style App fill:#007bff,color:#fff
+    style L2CAP fill:#17a2b8,color:#fff
             </div>
 
-            <h3>核心层详解</h3>
-            <div class="grid">
-                <div class="card">
-                    <h3>PHY (Physical Layer)</h3>
-                    <ul>
-                        <li>RF 射频收发</li>
-                        <li>GFSK 调制解调</li>
-                        <li>发射接收切换</li>
-                        <li>Channel Index → RF 频率</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <h3>Link Layer</h3>
-                    <ul>
-                        <li>状态机：Standby/Adv/Scann/Initiator/Connected</li>
-                        <li>广播/扫描/连接</li>
-                        <li>数据加解密</li>
-                        <li>CRC 校验</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <h3>HCI (Host Controller Interface)</h3>
-                    <ul>
-                        <li>Command/Event/ACL/SCO</li>
-                        <li>Flow Control</li>
-                        <li>Buffer Management</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <h3>L2CAP</h3>
-                    <ul>
-                        <li>Channel ID (CID) 复用</li>
-                        <li>Segmentation/Reassembly</li>
-                        <li>Flow Control</li>
-                        <li>LE Credit Based Flow</li>
-                    </ul>
-                </div>
-            </div>
-
-            <h3>HCI 指令类型</h3>
+            <h3>📋 各层职责与开发接口</h3>
             <table class="table">
                 <thead>
                     <tr>
-                        <th>类型</th>
-                        <th>OGF</th>
-                        <th>示例</th>
+                        <th>层</th>
+                        <th>职责</th>
+                        <th>开发者接口</th>
+                        <th>典型 API</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Application</strong></td>
+                        <td>业务逻辑实现</td>
+                        <td>Profile SDK</td>
+                        <td>readCharacteristic(), write()</td>
+                    </tr>
+                    <tr>
+                        <td><strong>GATT</strong></td>
+                        <td>服务/特征值管理</td>
+                        <td>GATT Profile</td>
+                        <td>addService(), addCharacteristic()</td>
+                    </tr>
+                    <tr>
+                        <td><strong>GAP</strong></td>
+                        <td>设备发现与连接</td>
+                        <td>Advertising/Scan API</td>
+                        <td>startAdvertising(), connect()</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ATT</strong></td>
+                        <td>属性访问协议</td>
+                        <td>内部使用</td>
+                        <td>Read/Write/Notify Request</td>
+                    </tr>
+                    <tr>
+                        <td><strong>L2CAP</strong></td>
+                        <td>信道复用与分段</td>
+                        <td>LE Credit Based</td>
+                        <td>connectChannel(), send()</td>
+                    </tr>
+                    <tr>
+                        <td><strong>HCI</strong></td>
+                        <td>主机控制器通信</td>
+                        <td>HCI Command/Event</td>
+                        <td>hci_send_cmd(), hci_read_evt()</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Link Layer</strong></td>
+                        <td>连接调度与状态机</td>
+                        <td>固件实现</td>
+                        <td>自动处理</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PHY</strong></td>
+                        <td>射频收发</td>
+                        <td>固件实现</td>
+                        <td>自动处理</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>🔧 Host 层详解（开发者关注）</h3>
+
+            <h4>GAP 层 - 设备发现与连接</h4>
+            <div class="mermaid">
+sequenceDiagram
+    participant App as 应用层
+    participant GAP as GAP 层
+    participant LL as Link Layer
+    
+    App->>GAP: 配置广播参数
+    GAP->>LL: HCI_LE_Set_Advertising_Parameters
+    App->>GAP: 设置广播数据
+    GAP->>LL: HCI_LE_Set_Advertising_Data
+    App->>GAP: 启动广播
+    GAP->>LL: HCI_LE_Set_Advertise_Enable
+    LL-->>GAP: 广播完成事件
+    GAP-->>App: 回调通知
+            </div>
+
+            <pre><code class="language-c">// GAP 广播配置示例 (Nordic SDK)
+ble_gap_adv_params_t adv_params = {
+    .properties = {
+        .type = BLE_GAP_ADV_TYPE_CONNECTABLE_SCANNABLE_UNDIRECTED
+    },
+    .p_peer_addr = NULL,
+    .interval = {
+        .min = BLE_GAP_ADV_INTERVAL_MIN,  // 160 * 0.625ms = 100ms
+        .max = BLE_GAP_ADV_INTERVAL_MAX
+    },
+    .timeout = 0,
+    .filter_policy = BLE_GAP_ADV_FP_ANY
+};
+
+// 设置广播数据
+uint8_t adv_data[] = {
+    0x02, 0x01, 0x06,  // Flags
+    0x03, 0x03, 0xAA, 0xFE,  // Service UUID (0xFEAA)
+    0x0B, 0x09, 'M', 'y', 'D', 'e', 'v', 'i', 'c', 'e'  // Device Name
+};
+
+sd_ble_gap_adv_start(&adv_params, 1);</code></pre>
+
+            <h4>GATT 层 - 服务与特征值</h4>
+            <div class="mermaid">
+flowchart TB
+    subgraph Server["GATT Server (外设)"]
+        S1[服务 180F 电池]
+        C1[特征值 2A19 电量]
+        D1[描述符 2902 CCCD]
+    end
+    
+    subgraph Client["GATT Client (中心)"]
+        C2[发现服务]
+        C3[发现特征值]
+        C4[读写操作]
+    end
+    
+    S1 --> C1
+    C1 --> D1
+    C2 --> C3
+    C3 --> C4
+    
+    Client <-->|"ATT 请求/响应"| Server
+    
+    style Server fill:#d4edda,stroke:#28a745
+    style Client fill:#e3f2fd,stroke:#007bff
+            </div>
+
+            <pre><code class="language-c">// GATT 服务定义示例
+// 电池服务 UUID: 0x180F
+// 电池电量特征值 UUID: 0x2A19
+
+ble_gatts_char_md_t char_md = {
+    .char_props.read = 1,
+    .char_props.notify = 1,
+    .p_char_user_desc = NULL,
+    .p_char_pf = NULL,
+    .p_user_desc_md = NULL,
+};
+
+ble_uuid_t uuid = {
+    .uuid = BLE_UUID_BATTERY_LEVEL_CHAR,
+    .type = BLE_UUID_TYPE_BLE
+};
+
+ble_attr_char_value_t char_val = {
+    .def_val = 100,  // 初始电量 100%
+    .max_len = 1,
+};
+
+// 添加特征值到服务
+sd_ble_gatts_characteristic_add(service_handle, &char_md, &attr, &char_handle);</code></pre>
+
+            <h4>L2CAP 层 - 信道复用</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>信道 ID (CID)</th>
+                        <th>用途</th>
                         <th>说明</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Link Control</td>
-                        <td>0x01</td>
-                        <td>HCI_Inquiry</td>
-                        <td>扫描设备</td>
+                        <td><strong>0x0000</strong></td>
+                        <td>NULL</td>
+                        <td>保留</td>
                     </tr>
                     <tr>
-                        <td>Link Policy</td>
-                        <td>0x02</td>
-                        <td>HCI_Accept_Connection</td>
-                        <td>连接管理</td>
+                        <td><strong>0x0001</strong></td>
+                        <td>ATT</td>
+                        <td>属性协议 (GATT 使用)</td>
                     </tr>
                     <tr>
-                        <td>Host Controller</td>
-                        <td>0x03</td>
-                        <td>HCI_Set_Event_Mask</td>
-                        <td>控制器配置</td>
+                        <td><strong>0x0002</strong></td>
+                        <td>SMP</td>
+                        <td>安全管理器</td>
                     </tr>
                     <tr>
-                        <td>Information</td>
-                        <td>0x04</td>
-                        <td>HCI_Read_Local_Version</td>
-                        <td>版本信息</td>
+                        <td><strong>0x0003</strong></td>
+                        <td>LE SMP</td>
+                        <td>低功耗安全配对</td>
                     </tr>
                     <tr>
-                        <td>LE Controller</td>
-                        <td>0x08</td>
-                        <td>HCI_LE_Create_Connection</td>
-                        <td>BLE 操作</td>
+                        <td><strong>0x0004-0x003F</strong></td>
+                        <td>固定信道</td>
+                        <td>保留</td>
+                    </tr>
+                    <tr>
+                        <td><strong>0x0040-0xFFFF</strong></td>
+                        <td>动态信道</td>
+                        <td>LE Credit Based 连接</td>
                     </tr>
                 </tbody>
             </table>
 
-            <h3>📊 协议交互时序图</h3>
-            <pre><code>// BLE 连接建立时序
-设备 A(广播)                 设备 B(扫描)
-    |                           |
-    |--- ADV_IND (广播) -------->|
-    |                           |
-    |<-- SCAN_REQ (扫描请求) ---|
-    |--- SCAN_RSP (扫描响应) -->|
-    |                           |
-    |<-- CONNECT_IND (连接请求)-|
-    |                           |
-    |========= 连接建立 ========>|
-    |                           |
-    |--- 数据交换 (L2CAP) ------>|
-    |<-- 数据交换 (L2CAP) ------|
-    |                           |</code></pre>
+            <h3>📦 数据包结构详解</h3>
 
-            <h3>📋 各层数据格式</h3>
+            <h4>完整数据流向</h4>
+            <div class="mermaid">
+flowchart LR
+    App["应用数据"] --> GATT["GATT PDU"]
+    GATT --> ATT["ATT PDU"]
+    ATT --> L2CAP["L2CAP Header + Payload"]
+    L2CAP --> HCI["HCI ACL Packet"]
+    HCI --> LL["LL Data PDU"]
+    LL --> PHY["RF Packet"]
+    
+    subgraph Host["Host 添加头部"]
+        GATT
+        ATT
+        L2CAP
+    end
+    
+    subgraph Controller["Controller 添加头部"]
+        HCI
+        LL
+        PHY
+    end
+    
+    style App fill:#f8f9fa
+    style Host fill:#e3f2fd,stroke:#007bff
+    style Controller fill:#d4edda,stroke:#28a745
+    style PHY fill:#f8f9fa
+            </div>
+
+            <h4>HCI ACL 数据包格式</h4>
+            <pre><code class="language-c">// HCI ACL Data Packet
+// 用于 Host ↔ Controller 传输 GATT 数据
+
++----------------+----------------+----------------+
+|  HCI Header    |  ACL Header    |  L2CAP PDU     |
+|  (4 bytes)     |  (4 bytes)     |  (可变)        |
++----------------+----------------+----------------+
+
+// HCI Header 结构
+typedef struct {
+    uint16_t handle;      // 连接句柄 (12 位) + 标志 (4 位)
+    uint16_t dlen;        // 数据长度
+} hci_acl_header_t;
+
+// ACL Header 结构
+typedef struct {
+    uint16_t dlen;        // L2CAP 数据长度
+    uint16_t cid;         // 信道 ID (ATT=0x0001, SMP=0x0002)
+} l2cap_header_t;
+
+// 示例：发送 GATT 通知
+uint8_t packet[] = {
+    // HCI ACL Header
+    0x00, 0x40,           // Handle=0, PB=00, BC=00
+    0x17, 0x00,           // Data Length=23
+    
+    // L2CAP Header
+    0x13, 0x00,           // L2CAP Length=19
+    0x01, 0x00,           // CID=0x0001 (ATT)
+    
+    // ATT Handle Value Notification
+    0x1B,                 // Opcode: Handle Value Notification
+    0x04, 0x00,           // Handle=0x0004
+    0x64,                 // Value: 100%
+};</code></pre>
+
+            <h4>ATT PDU 格式</h4>
+            <pre><code class="language-c">// ATT PDU 通用格式
++--------+------------------+
+| Opcode |  Parameters      |
+| 1 byte |  可变长度        |
++--------+------------------+
+
+// 常用 ATT Opcode
+#define ATT_OP_ERROR              0x01
+#define ATT_OP_EXCHANGE_MTU_REQ   0x02
+#define ATT_OP_EXCHANGE_MTU_RSP   0x03
+#define ATT_OP_FIND_INFO_REQ      0x04
+#define ATT_OP_FIND_INFO_RSP      0x05
+#define ATT_OP_FIND_BY_TYPE_REQ   0x06
+#define ATT_OP_FIND_BY_TYPE_RSP   0x07
+#define ATT_OP_READ_BY_TYPE_REQ   0x08
+#define ATT_OP_READ_BY_TYPE_RSP   0x09
+#define ATT_OP_READ_REQ           0x0A
+#define ATT_OP_READ_RSP           0x0B
+#define ATT_OP_READ_BLOB_REQ      0x0C
+#define ATT_OP_READ_BLOB_RSP      0x0D
+#define ATT_OP_READ_MULTI_REQ     0x0E
+#define ATT_OP_READ_MULTI_RSP     0x0F
+#define ATT_OP_READ_BY_GROUP_REQ  0x10
+#define ATT_OP_READ_BY_GROUP_RSP  0x11
+#define ATT_OP_WRITE_REQ          0x12
+#define ATT_OP_WRITE_RSP          0x13
+#define ATT_OP_WRITE_CMD          0x52
+#define ATT_OP_PREP_WRITE_REQ     0x16
+#define ATT_OP_PREP_WRITE_RSP     0x17
+#define ATT_OP_EXEC_WRITE_REQ     0x18
+#define ATT_OP_EXEC_WRITE_RSP     0x19
+#define ATT_OP_HANDLE_VALUE_NOTIF 0x1B
+#define ATT_OP_HANDLE_VALUE_IND   0x1D
+#define ATT_OP_HANDLE_VALUE_CFM   0x1E</code></pre>
+
+            <h4>各层 MTU 对比</h4>
             <table class="table">
                 <thead>
                     <tr>
                         <th>层</th>
-                        <th>PDU</th>
+                        <th>PDU 名称</th>
                         <th>最大负载</th>
+                        <th>头部开销</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td>PHY</td>
+                        <td><strong>PHY</strong></td>
                         <td>Physical Channel PDU</td>
                         <td>37 bytes</td>
+                        <td>10 bytes</td>
                     </tr>
                     <tr>
-                        <td>LL</td>
-                        <td>LL Data / LL Control</td>
-                        <td>27 bytes</td>
+                        <td><strong>LL</strong></td>
+                        <td>LL Data PDU</td>
+                        <td>27 bytes (BLE 4.x)</td>
+                        <td>2 bytes</td>
                     </tr>
                     <tr>
-                        <td>L2CAP</td>
-                        <td>BLE L2CAP</td>
+                        <td><strong>LL</strong></td>
+                        <td>LL Data PDU</td>
+                        <td>251 bytes (BLE 5.0+)</td>
+                        <td>2 bytes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>L2CAP</strong></td>
+                        <td>L2CAP PDU</td>
                         <td>65535 bytes</td>
+                        <td>4 bytes</td>
                     </tr>
                     <tr>
-                        <td>ATT</td>
+                        <td><strong>ATT</strong></td>
                         <td>ATT PDU</td>
-                        <td>MTU-3 bytes</td>
+                        <td>MTU - 3 bytes</td>
+                        <td>1 byte (Opcode)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>GATT</strong></td>
+                        <td>Attribute Value</td>
+                        <td>MTU - 4 bytes</td>
+                        <td>2 bytes (Handle) + 1 byte</td>
                     </tr>
                 </tbody>
             </table>
+
+            <h3>🔌 HCI 命令速查</h3>
+
+            <h4>常用 LE Controller 命令 (OGF=0x08)</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>OCF</th>
+                        <th>命令名称</th>
+                        <th>功能</th>
+                        <th>返回事件</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>0x0001</td>
+                        <td>LE_Set_Event_Mask</td>
+                        <td>配置 LE 事件掩码</td>
+                        <td>Command_Complete</td>
+                    </tr>
+                    <tr>
+                        <td>0x0002</td>
+                        <td>LE_Read_Buffer_Size</td>
+                        <td>读取 Controller 缓冲区大小</td>
+                        <td>Command_Complete</td>
+                    </tr>
+                    <tr>
+                        <td>0x0003</td>
+                        <td>LE_Read_Local_Supported_Features</td>
+                        <td>读取本地支持的特性</td>
+                        <td>Command_Complete</td>
+                    </tr>
+                    <tr>
+                        <td>0x0008</td>
+                        <td>LE_Set_Random_Address</td>
+                        <td>设置随机地址</td>
+                        <td>Command_Complete</td>
+                    </tr>
+                    <tr>
+                        <td>0x000A</td>
+                        <td>LE_Set_Advertising_Parameters</td>
+                        <td>配置广播参数</td>
+                        <td>Command_Complete</td>
+                    </tr>
+                    <tr>
+                        <td>0x000B</td>
+                        <td>LE_Set_Advertising_Data</td>
+                        <td>设置广播数据</td>
+                        <td>Command_Complete</td>
+                    </tr>
+                    <tr>
+                        <td>0x000C</td>
+                        <td>LE_Set_Scan_Response_Data</td>
+                        <td>设置扫描响应数据</td>
+                        <td>Command_Complete</td>
+                    </tr>
+                    <tr>
+                        <td>0x000D</td>
+                        <td>LE_Set_Advertise_Enable</td>
+                        <td>启用/禁用广播</td>
+                        <td>Command_Complete</td>
+                    </tr>
+                    <tr>
+                        <td>0x000E</td>
+                        <td>LE_Set_Scan_Parameters</td>
+                        <td>配置扫描参数</td>
+                        <td>Command_Complete</td>
+                    </tr>
+                    <tr>
+                        <td>0x000F</td>
+                        <td>LE_Set_Scan_Enable</td>
+                        <td>启用/禁用扫描</td>
+                        <td>Command_Complete</td>
+                    </tr>
+                    <tr>
+                        <td>0x0011</td>
+                        <td>LE_Create_Connection</td>
+                        <td>发起连接</td>
+                        <td>LE_Connection_Complete</td>
+                    </tr>
+                    <tr>
+                        <td>0x0016</td>
+                        <td>LE_Read_White_List_Size</td>
+                        <td>读取白名单大小</td>
+                        <td>Command_Complete</td>
+                    </tr>
+                    <tr>
+                        <td>0x0020</td>
+                        <td>LE_Read_PHY</td>
+                        <td>读取当前 PHY</td>
+                        <td>Command_Complete</td>
+                    </tr>
+                    <tr>
+                        <td>0x0031</td>
+                        <td>LE_Set_Default_PHY</td>
+                        <td>设置默认 PHY</td>
+                        <td>Command_Complete</td>
+                    </tr>
+                    <tr>
+                        <td>0x0034</td>
+                        <td>LE_Set_Extended_Advertising_Parameters</td>
+                        <td>扩展广播参数 (BLE 5.0+)</td>
+                        <td>Command_Complete</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>HCI 命令格式示例</h4>
+            <pre><code class="language-c">// HCI 命令包格式
+// +----------------+----------------+----------------+
+// | Opcode (2B)    | Parameter Len  | Parameters     |
+// | OGF(10b)+OCF(6b)| (1B)          | (可变)         |
+// +----------------+----------------+----------------+
+
+// 示例：LE_Set_Advertising_Parameters
+// OGF = 0x08, OCF = 0x000A
+// Opcode = 0x200A
+
+uint8_t hci_cmd[] = {
+    0x0A, 0x20,           // Opcode: OGF=0x08, OCF=0x000A
+    0x1F,                 // Parameter Length: 31 bytes
+    
+    // Advertising Parameters
+    0xA0, 0x00,           // Interval Min: 160 * 0.625ms = 100ms
+    0xA0, 0x00,           // Interval Max
+    0x00,                 // Type: ADV_IND
+    0x00, 0x00,           // Own Address Type
+    0x00,                 // Peer Address Type
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // Peer Address
+    0x07,                 // Channel Map: 37,38,39
+    0x00,                 // Filter Policy
+};</code></pre>
+
+            <h3>💻 跨平台 HCI 调用示例</h3>
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="linux">Linux HCI</button>
+                    <button class="tab-btn" data-tab="python">Python</button>
+                    <button class="tab-btn" data-tab="nordic">Nordic SDK</button>
+                </div>
+
+                <div class="tab-content active" id="linux">
+                    <h5>Linux BlueZ HCI 调用</h5>
+                    <pre><code class="language-c">#include <bluetooth/bluetooth.h>
+#include <bluetooth/hci.h>
+#include <bluetooth/hci_lib.h>
+
+int main() {
+    int dev_id = hci_get_route(NULL);
+    int dev_fd = hci_open_dev(dev_id);
+    
+    // LE_Set_Advertising_Parameters
+    struct hci_request hci_req = {
+        .ogf = OGF_LE_CTL,
+        .ocf = OCF_LE_SET_ADV_PARAMETERS,
+        .cparam = &adv_params,
+        .clen = LE_SET_ADV_PARAMETERS_CP_SIZE,
+        .rparam = &rp,
+        .rlen = LE_SET_ADV_PARAMETERS_RP_SIZE,
+    };
+    
+    hci_send_req(dev_fd, &hci_req, 1000);
+    
+    // LE_Set_Advertise_Enable
+    uint8_t enable = 0x01;
+    hci_send_cmd(dev_fd, OGF_LE_CTL, OCF_LE_SET_ADV_ENABLE, 1, &enable);
+    
+    return 0;
+}</code></pre>
+                </div>
+
+                <div class="tab-content" id="python">
+                    <h5>Python pybluez 调用</h5>
+                    <pre><code class="language-python">import bluetooth._bluetooth as bluez
+
+# 打开 HCI 设备
+dev_id = 0
+sock = bluez.hci_open_dev(dev_id)
+
+# 发送 HCI 命令
+# LE_Set_Advertising_Parameters
+cmd = bytes([
+    0x0A, 0x20,  # Opcode
+    0x1F,        # Length
+    # ... 参数
+])
+
+sock.send(cmd)
+
+# 读取事件
+evt = sock.recv(255)
+print(f"Event: {evt.hex()}")</code></pre>
+                </div>
+
+                <div class="tab-content" id="nordic">
+                    <h5>Nordic SDK (SoftDevice)</h5>
+                    <pre><code class="language-c">#include "nrf_sdm.h"
+#include "nrf_sdh.h"
+#include "nrf_sdh_ble.h"
+
+// 启用 SoftDevice
+void softdevice_init(void) {
+    nrf_clock_lf_cfg_t clock_cfg = NRF_CLOCK_LFCLK_RC;
+    
+    // 初始化 SoftDevice
+    sd_softdevice_enable(&clock_cfg, NULL);
+    
+    // 启用 BLE
+    nrf_sdh_ble_default_cfg_set(APP_BLE_CONN_CFG_TAG, &ble_cfg);
+    nrf_sdh_ble_enable(&ram_start);
+    
+    // 配置广播参数
+    ble_gap_adv_params_t adv_params = {
+        .properties.type = BLE_GAP_ADV_TYPE_CONNECTABLE_SCANNABLE_UNDIRECTED,
+        .interval.min = 160,  // 100ms
+        .interval.max = 160,
+    };
+    
+    sd_ble_gap_adv_start(&adv_params, APP_BLE_CONN_CFG_TAG);
+}</code></pre>
+                </div>
+            </div>
         </section>
     </main>
 
     <script src="../js/script.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            sequence: {
+                actorMargin: 50,
+                boxMargin: 10,
+                messageMargin: 40,
+                showSequenceNumbers: true
+            }
+        });
+    </script>
 </body>
 </html>
