@@ -6,6 +6,7 @@
     <title>连接管理 - 蓝牙协议开发教程</title>
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
 </head>
 <body>
@@ -30,6 +31,75 @@
     <main class="main">
         <section class="section">
             <h2>连接管理</h2>
+
+            <h3>📐 BLE 连接流程</h3>
+            <div class="flow-row">
+                <div class="flow-box flow-start">1.广播</div>
+                <div class="flow-box">→</div>
+                <div class="flow-box flow-process">2.扫描</div>
+                <div class="flow-box">→</div>
+                <div class="flow-box flow-process">3.发起连接</div>
+                <div class="flow-box">→</div>
+                <div class="flow-box flow-process">4.参数协商</div>
+                <div class="flow-box">→</div>
+                <div class="flow-box flow-success">5.连接完成</div>
+            </div>
+
+            <h3>📈 BLE 连接序列图</h3>
+            <div class="mermaid">
+sequenceDiagram
+    participant P as 从设备 (Peripheral)
+    participant C as 主设备 (Central)
+    
+    Note over P,C: 广播阶段
+    P->>C: ADV_IND (广播)
+    C->>P: SCAN_REQ
+    P->>C: SCAN_RSP (设备名称等)
+    
+    Note over P,C: 连接阶段
+    C->>P: CONNECT_IND (连接请求)
+    P->>C: LL_CONNECTION_UPDATE
+    
+    Note over P,C: 数据交互
+    C->>P: ATT_EXCHANGE_MTU
+    P->>C: MTU Response
+    C->>P: GATT 数据交互
+            </div>
+
+            <h3>📐 经典蓝牙连接流程</h3>
+            <div class="flow-row">
+                <div class="flow-box flow-start">Inquiry</div>
+                <div class="flow-box">→</div>
+                <div class="flow-box flow-process">Page</div>
+                <div class="flow-box">→</div>
+                <div class="flow-box flow-process">RFCOMM</div>
+                <div class="flow-box">→</div>
+                <div class="flow-box flow-process">SDP</div>
+                <div class="flow-box">→</div>
+                <div class="flow-box flow-success">连接建立</div>
+            </div>
+
+            <h3>📈 经典蓝牙连接序列图</h3>
+            <div class="mermaid">
+sequenceDiagram
+    participant H as 主机 (Host)
+    participant D as 从机 (Device)
+    
+    Note over H,D: 设备发现
+    H->>D: HCI_Inquiry
+    D->>H: HCI_Inquiry_Result
+    
+    Note over H,D: 建立连接
+    H->>D: HCI_Create_Connection
+    D->>H: HCI_Connection_Complete
+    
+    Note over H,D: L2CAP/RFCOMM
+    H->>D: L2CAP_ConnectReq
+    D->>H: RFCOMM_Connect
+    
+    Note over H,D: 数据传输
+    H->>D: 数据传输
+            </div>
 
             <h3>连接参数详解</h3>
             <table class="table">
@@ -96,5 +166,17 @@
 
     <script src="../js/script.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            sequence: {
+                actorMargin: 50,
+                boxMargin: 10,
+                messageMargin: 40,
+                showSequenceNumbers: true
+            }
+        });
+    </script>
 </body>
 </html>
