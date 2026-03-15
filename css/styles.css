@@ -1294,42 +1294,12 @@ html {
     background: rgba(255,255,255,0.3);
 }
 
-/* 流程图样式 */
-.flow-row {
+/* Mermaid 图表样式 */
+.mermaid {
     display: flex;
-    align-items: center;
     justify-content: center;
-    gap: 8px;
     margin: 30px 0;
-    flex-wrap: wrap;
-}
-
-.flow-box {
-    padding: 12px 20px;
+    padding: 20px;
+    background: #f8f9fa;
     border-radius: 8px;
-    text-align: center;
-    font-weight: 600;
-    font-size: 14px;
-    min-width: 80px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-}
-
-.flow-box:hover {
-    transform: scale(1.05);
-}
-
-.flow-start {
-    background: linear-gradient(135deg, #28a745 0%, #218838 100%);
-    color: white;
-}
-
-.flow-process {
-    background: linear-gradient(135deg, #007bff 0%, #0066CC 100%);
-    color: white;
-}
-
-.flow-success {
-    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
-    color: white;
 }

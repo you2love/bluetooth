@@ -33,16 +33,18 @@
             <h2>连接管理</h2>
 
             <h3>📐 BLE 连接流程</h3>
-            <div class="flow-row">
-                <div class="flow-box flow-start">1.广播</div>
-                <div class="flow-box">→</div>
-                <div class="flow-box flow-process">2.扫描</div>
-                <div class="flow-box">→</div>
-                <div class="flow-box flow-process">3.发起连接</div>
-                <div class="flow-box">→</div>
-                <div class="flow-box flow-process">4.参数协商</div>
-                <div class="flow-box">→</div>
-                <div class="flow-box flow-success">5.连接完成</div>
+            <div class="mermaid">
+flowchart LR
+    A[1. 广播] --> B[2. 扫描]
+    B --> C[3. 发起连接]
+    C --> D[4. 参数协商]
+    D --> E[5. 连接完成]
+    
+    style A fill:#28a745,color:#fff,stroke:#1e7e34
+    style B fill:#007bff,color:#fff,stroke:#0056b3
+    style C fill:#007bff,color:#fff,stroke:#0056b3
+    style D fill:#007bff,color:#fff,stroke:#0056b3
+    style E fill:#28a745,color:#fff,stroke:#1e7e34
             </div>
 
             <h3>📈 BLE 连接序列图</h3>
@@ -67,16 +69,18 @@ sequenceDiagram
             </div>
 
             <h3>📐 经典蓝牙连接流程</h3>
-            <div class="flow-row">
-                <div class="flow-box flow-start">Inquiry</div>
-                <div class="flow-box">→</div>
-                <div class="flow-box flow-process">Page</div>
-                <div class="flow-box">→</div>
-                <div class="flow-box flow-process">RFCOMM</div>
-                <div class="flow-box">→</div>
-                <div class="flow-box flow-process">SDP</div>
-                <div class="flow-box">→</div>
-                <div class="flow-box flow-success">连接建立</div>
+            <div class="mermaid">
+flowchart LR
+    A[Inquiry] --> B[Page]
+    B --> C[RFCOMM]
+    C --> D[SDP]
+    D --> E[连接建立]
+    
+    style A fill:#28a745,color:#fff,stroke:#1e7e34
+    style B fill:#007bff,color:#fff,stroke:#0056b3
+    style C fill:#007bff,color:#fff,stroke:#0056b3
+    style D fill:#007bff,color:#fff,stroke:#0056b3
+    style E fill:#28a745,color:#fff,stroke:#1e7e34
             </div>
 
             <h3>📈 经典蓝牙连接序列图</h3>
