@@ -346,6 +346,261 @@ void hfp_event_handler(hfp_event_t event) {
                 </div>
             </div>
 
+            <h3>🔧 A2DP 数据包构建详解</h3>
+            <p class="lead">从音频采样到蓝牙空中传输，每一层如何添加头部，组合成完整的音频数据包。</p>
+
+            <h4>数据包组合流程 (A2DP 音频流)</h4>
+            <div class="mermaid">
+flowchart TB
+    subgraph Step1["步骤 1: 音频采样"]
+        A1["PCM 音频数据<br/>44.1kHz 16-bit 立体声"]
+    end
+    
+    subgraph Step2["步骤 2: 编码"]
+        A2["SBC/AAC 编码<br/>压缩音频帧"]
+    end
+    
+    subgraph Step3["步骤 3: RTP 封装"]
+        A3["RTP Header<br/>12 bytes"]
+    end
+    
+    subgraph Step4["步骤 4: AVDTP"]
+        A4["AVDTP Media Header<br/>1-4 bytes"]
+    end
+    
+    subgraph Step5["步骤 5: L2CAP"]
+        A5["L2CAP Header<br/>4 bytes"]
+    end
+    
+    subgraph Step6["步骤 6: HCI ACL"]
+        A6["HCI ACL Header<br/>4 bytes"]
+    end
+    
+    subgraph Step7["步骤 7: LL+PHY"]
+        A7["LL Header + MIC + CRC<br/>前导码 + 访问地址"]
+    end
+    
+    A1 --> A2
+    A2 --> A3
+    A3 --> A4
+    A4 --> A5
+    A5 --> A6
+    A6 --> A7
+    
+    style Step1 fill:#d4edda,stroke:#28a745
+    style Step2 fill:#e3f2fd,stroke:#007bff
+    style Step3 fill:#e3f2fd,stroke:#007bff
+    style Step4 fill:#e3f2fd,stroke:#007bff
+    style Step5 fill:#fff3cd,stroke:#ffc107
+    style Step6 fill:#d4edda,stroke:#28a745
+    style Step7 fill:#d4edda,stroke:#28a745
+            </div>
+
+            <h4>完整数据包结构图 (A2DP)</h4>
+            <div class="mermaid">
+flowchart LR
+    subgraph RF["RF 空中传输"]
+        R1["RF Packet<br/>约 340 bytes"]
+    end
+    
+    subgraph LL["Link Layer"]
+        L1["DH5 Packet<br/>339 bytes 数据"]
+    end
+    
+    subgraph HCI["HCI ACL"]
+        H1["HCI ACL Header<br/>4B"]
+        H2["ACL Data<br/>308B"]
+    end
+    
+    subgraph L2CAP["L2CAP"]
+        C1["L2CAP Header<br/>4B"]
+        C2["AVDTP Data<br/>304B"]
+    end
+    
+    subgraph AVDTP["AVDTP"]
+        A1["AVDTP Header<br/>2B"]
+        A2["RTP Packet<br/>302B"]
+    end
+    
+    subgraph RTP["RTP"]
+        R2["RTP Header<br/>12B"]
+        R3["SBC Frame<br/>290B"]
+    end
+    
+    subgraph SBC["SBC 编码"]
+        S1["SBC Header<br/>4B"]
+        S2["Audio Data<br/>286B"]
+    end
+    
+    R1 --> LL
+    L1 --> HCI
+    H2 --> L2CAP
+    C2 --> AVDTP
+    A2 --> RTP
+    R3 --> SBC
+    
+    style RF fill:#d4edda,stroke:#28a745
+    style LL fill:#e3f2fd,stroke:#007bff
+    style HCI fill:#fff3cd,stroke:#ffc107
+    style L2CAP fill:#e3f2fd,stroke:#007bff
+    style AVDTP fill:#e3f2fd,stroke:#007bff
+    style RTP fill:#e3f2fd,stroke:#007bff
+    style SBC fill:#d4edda,stroke:#28a745
+            </div>
+
+            <h4>数据包大小计算 (A2DP 音频流)</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>层</th>
+                        <th>头部大小</th>
+                        <th>数据大小</th>
+                        <th>本层总大小</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>PCM 音频</strong></td>
+                        <td>0 B</td>
+                        <td>1764 B (10ms)</td>
+                        <td>1764 B</td>
+                        <td>44.1kHz 16-bit 立体声</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SBC 编码</strong></td>
+                        <td>4 B</td>
+                        <td>286 B</td>
+                        <td>290 B</td>
+                        <td>压缩比约 1:6</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RTP</strong></td>
+                        <td>12 B</td>
+                        <td>290 B (SBC)</td>
+                        <td>302 B</td>
+                        <td>时间戳 + 序列号</td>
+                    </tr>
+                    <tr>
+                        <td><strong>AVDTP</strong></td>
+                        <td>2 B</td>
+                        <td>302 B (RTP)</td>
+                        <td>304 B</td>
+                        <td>媒体包头</td>
+                    </tr>
+                    <tr>
+                        <td><strong>L2CAP</strong></td>
+                        <td>4 B</td>
+                        <td>304 B (AVDTP)</td>
+                        <td>308 B</td>
+                        <td>CID=0x0040</td>
+                    </tr>
+                    <tr>
+                        <td><strong>HCI ACL</strong></td>
+                        <td>4 B</td>
+                        <td>308 B (L2CAP)</td>
+                        <td>312 B</td>
+                        <td>连接句柄</td>
+                    </tr>
+                    <tr>
+                        <td><strong>经典蓝牙 LL</strong></td>
+                        <td>可变</td>
+                        <td>312 B (HCI)</td>
+                        <td>约 340 B</td>
+                        <td>DH5 包类型</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>HFP 通话数据包 (SCO 链路)</h4>
+            <pre><code class="language-c">// HFP 通话使用 SCO (Synchronous Connection-Oriented) 链路
+// 固定间隔发送，保证实时性
+
+// CVSD 编码 (传统)
+// 每包 10 bytes, 每 3.75ms 发送一次
+uint8_t sco_cvsd[] = {
+    // SCO Header
+    0x00, 0x01, 0x02,  // 3 bytes 同步信息
+    // CVSD 音频数据
+    0x10, 0x20, 0x30, 0x40, 0x50,  // 5 bytes 音频
+    0x60, 0x70, 0x80, 0x90         // 4 bytes 音频
+};
+// 总长度：12 bytes, 每包 3.75ms
+
+// mSBC 编码 (宽带语音，HFP 1.6+)
+// 每包 60 bytes, 每 7.5ms 发送一次
+uint8_t sco_msbc[] = {
+    // mSBC 帧头
+    0x00, 0x01, 0x02, 0x03,  // 4 bytes 同步
+    // mSBC 音频数据
+    // ... 56 bytes 音频数据
+};
+// 总长度：60 bytes, 每包 7.5ms, 音质更好</code></pre>
+
+            <h4>音频编码参数对比</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>编码</th>
+                        <th>每包大小</th>
+                        <th>发送间隔</th>
+                        <th>码率</th>
+                        <th>数据包/秒</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>SBC</strong></td>
+                        <td>约 290 B</td>
+                        <td>10 ms</td>
+                        <td>328 kbps</td>
+                        <td>100 包/秒</td>
+                    </tr>
+                    <tr>
+                        <td><strong>AAC</strong></td>
+                        <td>约 250 B</td>
+                        <td>10 ms</td>
+                        <td>256 kbps</td>
+                        <td>100 包/秒</td>
+                    </tr>
+                    <tr>
+                        <td><strong>aptX</strong></td>
+                        <td>约 350 B</td>
+                        <td>10 ms</td>
+                        <td>352 kbps</td>
+                        <td>100 包/秒</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LDAC</strong></td>
+                        <td>约 990 B</td>
+                        <td>10 ms</td>
+                        <td>990 kbps</td>
+                        <td>100 包/秒</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LC3 (LE Audio)</strong></td>
+                        <td>约 160 B</td>
+                        <td>10 ms</td>
+                        <td>160 kbps</td>
+                        <td>100 包/秒</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CVSD (HFP)</strong></td>
+                        <td>10 B</td>
+                        <td>3.75 ms</td>
+                        <td>64 kbps</td>
+                        <td>267 包/秒</td>
+                    </tr>
+                    <tr>
+                        <td><strong>mSBC (HFP)</strong></td>
+                        <td>60 B</td>
+                        <td>7.5 ms</td>
+                        <td>128 kbps</td>
+                        <td>133 包/秒</td>
+                    </tr>
+                </tbody>
+            </table>
+
             <h3>🆕 LE Audio (蓝牙 5.2+)</h3>
             <div class="mermaid">
 flowchart TB

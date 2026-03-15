@@ -449,11 +449,394 @@ void switch_device(uint8_t index) {
                     </ul>
                 </div>
             </div>
+
+            <h3>🔧 键盘数据包构建详解</h3>
+            <p class="lead">从按键按下到蓝牙空中传输，每一层如何添加头部，组合成完整的数据包。</p>
+
+            <h4>数据包组合流程</h4>
+            <div class="mermaid">
+flowchart TB
+    subgraph Step1["步骤 1: 按键输入"]
+        A1["按键码 + 修饰键<br/>8 bytes"]
+    end
+    
+    subgraph Step2["步骤 2: HID 报告"]
+        A2["Report ID + 数据<br/>8 bytes"]
+    end
+    
+    subgraph Step3["步骤 3: GATT 层"]
+        A3["特征值句柄 + 报告"]
+    end
+    
+    subgraph Step4["步骤 4: ATT 层"]
+        A4["Opcode + Handle + Data"]
+    end
+    
+    subgraph Step5["步骤 5: L2CAP 层"]
+        A5["L2CAP Header<br/>Length + CID"]
+    end
+    
+    subgraph Step6["步骤 6: HCI 层"]
+        A6["HCI ACL Header<br/>Handle + Length"]
+    end
+    
+    subgraph Step7["步骤 7: LL+PHY"]
+        A7["LL Header + MIC + CRC<br/>前导码 + 访问地址"]
+    end
+    
+    A1 --> A2
+    A2 --> A3
+    A3 --> A4
+    A4 --> A5
+    A5 --> A6
+    A6 --> A7
+    
+    style Step1 fill:#d4edda,stroke:#28a745
+    style Step2 fill:#e3f2fd,stroke:#007bff
+    style Step3 fill:#e3f2fd,stroke:#007bff
+    style Step4 fill:#e3f2fd,stroke:#007bff
+    style Step5 fill:#fff3cd,stroke:#ffc107
+    style Step6 fill:#d4edda,stroke:#28a745
+    style Step7 fill:#d4edda,stroke:#28a745
+            </div>
+
+            <h4>逐步构建过程</h4>
+            <pre><code class="language-c">// ========== 步骤 1: 按键输入 ==========
+// 键盘矩阵扫描检测按键
+uint8_t modifier = 0x02;    // Left Shift
+uint8_t keycode = 0x1E;     // 数字键 1
+// 组合后为 Shift+1 = !
+
+// ========== 步骤 2: HID 报告封装 ==========
+// 构建键盘输入报告 (8 bytes)
+uint8_t keyboard_report[8] = {
+    0x01,       // [0] Report ID: 1
+    0x02,       // [1] Modifier: Left Shift
+    0x00,       // [2] Reserved: 0
+    0x1E,       // [3] Keycode 1: 1
+    0x00,       // [4] Keycode 2: 0 (无)
+    0x00,       // [5] Keycode 3: 0 (无)
+    0x00,       // [6] Keycode 4: 0 (无)
+    0x00        // [7] Keycode 5: 0 (无)
+};
+// HID 报告总长度：8 bytes
+
+// 特征值句柄 (假设)
+uint16_t report_handle = 0x002B;  // 输入报告特征值句柄
+
+// ========== 步骤 3: GATT 层封装 ==========
+// GATT 不添加额外头部，直接使用 ATT
+// 但需要知道特征值句柄和 Report ID
+
+// ========== 步骤 4: ATT 层封装 ==========
+// 添加 ATT Header (Opcode + Handle)
+uint8_t att_packet[] = {
+    0x1B,                   // [0] Opcode: Handle Value Notification
+    0x2B, 0x00,             // [1-2] Handle: 0x002B (小端序)
+    // GATT 数据 (HID 报告)
+    0x01, 0x02, 0x00, 0x1E, 0x00, 0x00, 0x00, 0x00
+};
+// ATT 层总长度：11 bytes
+
+// ========== 步骤 5: L2CAP 层封装 ==========
+// 添加 L2CAP Header (Length + CID)
+uint8_t l2cap_packet[] = {
+    0x0B, 0x00,             // [0-1] Length: 11 (ATT 包长度)
+    0x04, 0x00,             // [2-3] CID: 0x0004 (ATT 信道)
+    // ATT Packet (从步骤 4)
+    0x1B, 0x2B, 0x00, 0x01, 0x02, 0x00, 0x1E, 0x00,
+    0x00, 0x00, 0x00
+};
+// L2CAP 层总长度：15 bytes
+
+// ========== 步骤 6: HCI ACL 层封装 ==========
+// 添加 HCI ACL Header (Handle + Data Length)
+uint8_t hci_packet[] = {
+    0x01, 0x00,             // [0-1] Handle: 0x0001 (连接句柄)
+    0x0F, 0x00,             // [2-3] Data Length: 15 (L2CAP 包长度)
+    // L2CAP Packet (从步骤 5)
+    0x0B, 0x00, 0x04, 0x00, 0x1B, 0x2B, 0x00, 0x01,
+    0x02, 0x00, 0x1E, 0x00, 0x00, 0x00, 0x00
+};
+// HCI 层总长度：19 bytes
+
+// ========== 步骤 7: Link Layer 封装 ==========
+// LL 层添加：LL Header + MIC(加密) + CRC
+// LL Data PDU 结构:
+// +----------+------------+---------+-----+
+// | LL Header| LL Payload | MIC(4B) | CRC |
+// | (2B)     | (0-27B)    |         |(3B) |
+// +----------+------------+---------+-----+
+
+// LL Header (2 bytes)
+uint8_t ll_header[] = {
+    0x05,  // [0] LLID=01 (数据), NESN=0, SN=0, MD=0
+    0x0F   // [1] Length: 15 bytes (HCI 数据长度)
+};
+
+// LL Payload = HCI Packet (19 bytes)
+// 19 < 27-2-4-3 = 18, 需要分段发送！
+
+// 分段 1 (LL PDU #1) - 前 23 bytes
+uint8_t ll_pdu1[] = {
+    0x05, 0x17,             // LL Header (Length=23)
+    // HCI 数据前 19 bytes
+    0x01, 0x00, 0x0F, 0x00, 0x0B, 0x00, 0x04, 0x00,
+    0x1B, 0x2B, 0x00, 0x01, 0x02, 0x00, 0x1E, 0x00,
+    0x00, 0x00, 0x00,
+    // MIC (4 bytes, 如果启用加密)
+    0xA1, 0xB2, 0xC3, 0xD4,
+    // CRC (3 bytes)
+    0x12, 0x34, 0x56
+};
+
+// ========== 步骤 8: PHY 层封装 ==========
+// PHY 添加：前导码 + 访问地址
+// PHY Packet 结构:
+// +--------+----------+------------+-----+
+// | Preamble| Access  |   Payload  | CRC |
+// | (1B)   | Address  |  (LL PDU)  |     |
+// |        | (4B)     |            |     |
+// +--------+----------+------------+-----+
+
+uint8_t preamble = 0x55;              // 前导码 (01010101)
+uint32_t access_address = 0x8E89BED6; // 访问地址 (BLE 固定)
+// Payload = LL PDU (从步骤 7)
+// CRC 已在 LL 层计算</code></pre>
+
+            <h4>完整数据包结构图</h4>
+            <div class="mermaid">
+flowchart LR
+    subgraph PHY_Packet["PHY Packet (空中传输)"]
+        P1["Preamble<br/>1B"]
+        P2["Access Addr<br/>4B"]
+        P3["LL PDU<br/>可变"]
+        P4["CRC<br/>3B"]
+    end
+    
+    subgraph LL_PDU["LL PDU"]
+        L1["LL Header<br/>2B"]
+        L2["LL Payload<br/>0-27B"]
+        L3["MIC<br/>4B"]
+    end
+    
+    subgraph LL_Payload["LL Payload = HCI Packet"]
+        H1["HCI ACL Header<br/>4B"]
+        H2["L2CAP Packet<br/>可变"]
+    end
+    
+    subgraph L2CAP["L2CAP Packet"]
+        C1["L2CAP Header<br/>4B"]
+        C2["ATT PDU<br/>可变"]
+    end
+    
+    subgraph ATT["ATT PDU"]
+        A1["ATT Header<br/>3B"]
+        A2["GATT Data<br/>可变"]
+    end
+    
+    subgraph GATT["GATT Data = HID Report"]
+        G1["Report ID<br/>1B"]
+        G2["Modifier<br/>1B"]
+        G3["Reserved<br/>1B"]
+        G4["Keycode[0]<br/>1B"]
+        G5["Keycode[1-5]<br/>5B"]
+    end
+    
+    P3 --> LL_PDU
+    L2 --> LL_Payload
+    H2 --> L2CAP
+    C2 --> ATT
+    A2 --> GATT
+    
+    style PHY_Packet fill:#d4edda,stroke:#28a745
+    style LL_PDU fill:#e3f2fd,stroke:#007bff
+    style LL_Payload fill:#fff3cd,stroke:#ffc107
+    style L2CAP fill:#e3f2fd,stroke:#007bff
+    style ATT fill:#e3f2fd,stroke:#007bff
+    style GATT fill:#d4edda,stroke:#28a745
+            </div>
+
+            <h4>数据包大小计算</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>层</th>
+                        <th>头部大小</th>
+                        <th>数据大小</th>
+                        <th>本层总大小</th>
+                        <th>累计大小</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>HID Report</strong></td>
+                        <td>0 B</td>
+                        <td>8 B (键盘报告)</td>
+                        <td>8 B</td>
+                        <td>8 B</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ATT</strong></td>
+                        <td>3 B (Opcode+Handle)</td>
+                        <td>8 B (HID)</td>
+                        <td>11 B</td>
+                        <td>11 B</td>
+                    </tr>
+                    <tr>
+                        <td><strong>L2CAP</strong></td>
+                        <td>4 B (Length+CID)</td>
+                        <td>11 B (ATT)</td>
+                        <td>15 B</td>
+                        <td>15 B</td>
+                    </tr>
+                    <tr>
+                        <td><strong>HCI ACL</strong></td>
+                        <td>4 B (Handle+Length)</td>
+                        <td>15 B (L2CAP)</td>
+                        <td>19 B</td>
+                        <td>19 B</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LL</strong></td>
+                        <td>2 B (Header)</td>
+                        <td>19 B (HCI)</td>
+                        <td>25 B (+MIC 4B +CRC 3B)</td>
+                        <td>32 B</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PHY</strong></td>
+                        <td>5 B (Preamble+Access)</td>
+                        <td>32 B (LL)</td>
+                        <td>37 B (+CRC 3B)</td>
+                        <td>40 B</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><strong>注意:</strong> 键盘报告 8 bytes，加上协议头部后约 40 bytes，通常可以一次 LL PDU 发送。</p>
+
+            <h4>实际字节流 (十六进制)</h4>
+            <pre><code class="language-bash"># 最终在空中传输的完整字节流 (从内到外):
+
+# 应用数据 (键盘报告 8 bytes):
+01 02 00 1E 00 00 00 00
+
+# + ATT Header (3 bytes):
+1B 2B 00 01 02 00 1E 00 00 00 00
+
+# + L2CAP Header (4 bytes):
+0B 00 04 00 1B 2B 00 01 02 00 1E 00 00 00 00
+
+# + HCI ACL Header (4 bytes):
+0F 00 0B 00 04 00 1B 2B 00 01 02 00 1E 00 00 00 00
+
+# + LL Header + MIC + CRC:
+05 13 0F 00 0B 00 04 00 1B 2B 00 01 02 00 1E 00 00 00 00 A1 B2 C3 D4 12 34 56
+
+# + PHY Preamble + Access Address:
+55 8E 89 BE D6 05 13 0F 00 0B 00 04 00 1B 2B 00 01 02 00 1E 00 00 00 00 A1 B2 C3 D4 12 34 56
+
+# 最终空中传输：约 40 bytes (单个包)</code></pre>
+
+            <h4>常见按键数据包</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>按键</th>
+                        <th>Modifier</th>
+                        <th>Keycode[0]</th>
+                        <th>完整报告</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>A</strong></td>
+                        <td>0x00</td>
+                        <td>0x04</td>
+                        <td><code>01 00 00 04 00 00 00 00</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ctrl+A</strong></td>
+                        <td>0x01</td>
+                        <td>0x04</td>
+                        <td><code>01 01 00 04 00 00 00 00</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Enter</strong></td>
+                        <td>0x00</td>
+                        <td>0x28</td>
+                        <td><code>01 00 00 28 00 00 00 00</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Escape</strong></td>
+                        <td>0x00</td>
+                        <td>0x29</td>
+                        <td><code>01 00 00 29 00 00 00 00</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Space</strong></td>
+                        <td>0x00</td>
+                        <td>0x2C</td>
+                        <td><code>01 00 00 2C 00 00 00 00</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>F1</strong></td>
+                        <td>0x00</td>
+                        <td>0x3A</td>
+                        <td><code>01 00 00 3A 00 00 00 00</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>CapsLock</strong></td>
+                        <td>0x00</td>
+                        <td>0x39</td>
+                        <td><code>01 00 00 39 00 00 00 00</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Shift+1 (!)</strong></td>
+                        <td>0x02</td>
+                        <td>0x1E</td>
+                        <td><code>01 02 00 1E 00 00 00 00</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ctrl+Alt+Del</strong></td>
+                        <td>0x05</td>
+                        <td>0x4C</td>
+                        <td><code>01 05 00 4C 00 00 00 00</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>多键 (ABC)</strong></td>
+                        <td>0x00</td>
+                        <td>0x04,0x05,0x06</td>
+                        <td><code>01 00 00 04 05 06 00 00</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>按键释放</strong></td>
+                        <td>0x00</td>
+                        <td>0x00</td>
+                        <td><code>01 00 00 00 00 00 00 00</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>按键按下与释放序列</h4>
+            <pre><code class="language-bash"># 按下并释放按键 "A" 的完整过程:
+
+# 1. 初始状态 (无按键)
+01 00 00 00 00 00 00 00
+
+# 2. 按下 A (发送按键码)
+01 00 00 04 00 00 00 00
+
+# 3. 释放 A (发送空报告)
+01 00 00 00 00 00 00 00
+
+# 每个报告都会通过 BLE Notify 发送到主机
+# 典型延迟：7.5ms - 20ms (取决于连接间隔)</code></pre>
         </section>
     </main>
 
     <script>
-        mermaid.initialize({ 
+        mermaid.initialize({
             startOnLoad: true,
             theme: 'default',
             sequence: {
