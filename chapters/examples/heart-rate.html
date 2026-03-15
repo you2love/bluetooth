@@ -66,6 +66,30 @@ flowchart TB
     style Phone fill:#d4edda,stroke:#28a745
             </div>
 
+            <h3>📋 什么是 Profile？</h3>
+            <p class="lead"><strong>Profile(配置文件)</strong> 是蓝牙联盟 (SIG) 定义的标准应用规范，确保不同厂商的设备可以互操作。</p>
+            
+            <div class="grid">
+                <div class="card">
+                    <h3>为什么需要 Profile？</h3>
+                    <ul>
+                        <li><strong>统一数据格式:</strong> 所有 HRM 设备使用相同的数据结构</li>
+                        <li><strong>即插即用:</strong> App 无需适配每个设备</li>
+                        <li><strong>互操作性:</strong> Nordic 芯片可连接 iOS/Android</li>
+                        <li><strong>降低开发成本:</strong> 无需自定义协议</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>HRM Profile 组成</h3>
+                    <ul>
+                        <li><strong>服务 UUID:</strong> 0x180D (心率服务)</li>
+                        <li><strong>特征值 UUID:</strong> 0x2A37 (心率测量)</li>
+                        <li><strong>数据格式:</strong> 标志位 + 心率值 + 可选字段</li>
+                        <li><strong>操作流程:</strong> 发现→启用通知→接收数据</li>
+                    </ul>
+                </div>
+            </div>
+
             <h3>📋 HRM Profile 结构</h3>
             <div class="mermaid">
 flowchart TB
