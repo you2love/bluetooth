@@ -266,6 +266,72 @@ pre code {
     font-size: 14px;
 }
 
+/* Prism 语法高亮增强 */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+    color: #6a9955;
+    font-style: italic;
+}
+
+.token.punctuation {
+    color: #d4d4d4;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol {
+    color: #b5cea8;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin {
+    color: #ce9178;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+    color: #d4d4d4;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+    color: #569cd6;
+}
+
+.token.function,
+.token.class-name {
+    color: #dcdcaa;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+    color: #d16969;
+}
+
+/* 行号 */
+pre[class*="language-"].line-numbers {
+    padding-left: 3.8em;
+    counter-reset: linenumber;
+}
+
+pre[class*="language-"].line-numbers > code {
+    position: relative;
+    white-space: inherit;
+}
+
 /* Tab 切换 */
 .tab-container {
     margin: 20px 0;
