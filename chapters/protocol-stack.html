@@ -94,6 +94,95 @@ flowchart TD
             </div>
 
             <h3>📋 各层职责与开发接口</h3>
+            
+            <h4>图表总览</h4>
+            <div class="mermaid">
+flowchart TB
+    subgraph Host["主机 Host (开发者关注)"]
+        App["Application<br/>📱 业务逻辑<br/>API: read/write"]
+        GATT["GATT<br/>🔌 服务/特征值<br/>API: addService"]
+        GAP["GAP<br/>📡 广播/连接<br/>API: startAdvertising"]
+        ATT["ATT<br/>📨 属性协议<br/>内部使用"]
+        L2CAP["L2CAP<br/>🔀 信道复用<br/>API: connectChannel"]
+    end
+    
+    subgraph HCI["HCI 接口"]
+        HCI_CMD["HCI Command⬇️"]
+        HCI_EVT["HCI Event⬆️"]
+        HCI_ACL["HCI ACL Data↔️"]
+    end
+    
+    subgraph Controller["控制器 (固件自动处理)"]
+        LL["Link Layer<br/>状态机 + 调度"]
+        PHY["PHY<br/>射频收发"]
+    end
+    
+    App --> GATT
+    GATT --> ATT
+    GAP --> ATT
+    ATT --> L2CAP
+    L2CAP --> HCI_ACL
+    HCI_ACL --> LL
+    HCI_CMD --> LL
+    LL --> HCI_EVT
+    LL --> PHY
+    
+    style Host fill:#e3f2fd,stroke:#007bff
+    style HCI fill:#fff3cd,stroke:#ffc107
+    style Controller fill:#d4edda,stroke:#28a745
+    style App fill:#007bff,color:#fff
+    style GATT fill:#17a2b8,color:#fff
+    style GAP fill:#28a745,color:#fff
+            </div>
+
+            <h4>各层详细说明</h4>
+            <div class="mermaid">
+flowchart LR
+    subgraph L7["应用层"]
+        A7["<b>职责:</b> 业务逻辑<br/><b>接口:</b> Profile SDK<br/><b>API:</b> readCharacteristic<br/>write()"]
+    end
+    
+    subgraph L6["GATT 层"]
+        A6["<b>职责:</b> 服务管理<br/><b>接口:</b> GATT Profile<br/><b>API:</b> addService<br/>addCharacteristic"]
+    end
+    
+    subgraph L5["GAP 层"]
+        A5["<b>职责:</b> 设备发现<br/><b>接口:</b> Advertising API<br/><b>API:</b> startAdvertising<br/>connect"]
+    end
+    
+    subgraph L4["ATT 层"]
+        A4["<b>职责:</b> 属性访问<br/><b>接口:</b> 内部使用<br/><b>API:</b> Read/Write<br/>Notify Request"]
+    end
+    
+    subgraph L3["L2CAP 层"]
+        A3["<b>职责:</b> 信道复用<br/><b>接口:</b> LE Credit Based<br/><b>API:</b> connectChannel<br/>send"]
+    end
+    
+    subgraph L2["HCI 层"]
+        A2["<b>职责:</b> Host-Controller<br/><b>接口:</b> HCI Command/Event<br/><b>API:</b> hci_send_cmd"]
+    end
+    
+    subgraph L1["LL+PHY"]
+        A1["<b>职责:</b> 射频/调度<br/><b>接口:</b> 固件实现<br/><b>API:</b> 自动处理"]
+    end
+    
+    L7 --> L6
+    L6 --> L5
+    L5 --> L4
+    L4 --> L3
+    L3 --> L2
+    L2 --> L1
+    
+    style L7 fill:#007bff,color:#fff
+    style L6 fill:#17a2b8,color:#fff
+    style L5 fill:#28a745,color:#fff
+    style L4 fill:#ffc107,color:#000
+    style L3 fill:#fd7e14,color:#fff
+    style L2 fill:#6f42c1,color:#fff
+    style L1 fill:#6c757d,color:#fff
+            </div>
+
+            <h4>开发者关注点</h4>
             <table class="table">
                 <thead>
                     <tr>
@@ -101,6 +190,7 @@ flowchart TD
                         <th>职责</th>
                         <th>开发者接口</th>
                         <th>典型 API</th>
+                        <th>关注程度</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -109,48 +199,56 @@ flowchart TD
                         <td>业务逻辑实现</td>
                         <td>Profile SDK</td>
                         <td>readCharacteristic(), write()</td>
+                        <td>⭐⭐⭐⭐⭐</td>
                     </tr>
                     <tr>
                         <td><strong>GATT</strong></td>
                         <td>服务/特征值管理</td>
                         <td>GATT Profile</td>
                         <td>addService(), addCharacteristic()</td>
+                        <td>⭐⭐⭐⭐⭐</td>
                     </tr>
                     <tr>
                         <td><strong>GAP</strong></td>
                         <td>设备发现与连接</td>
                         <td>Advertising/Scan API</td>
                         <td>startAdvertising(), connect()</td>
+                        <td>⭐⭐⭐⭐⭐</td>
                     </tr>
                     <tr>
                         <td><strong>ATT</strong></td>
                         <td>属性访问协议</td>
                         <td>内部使用</td>
                         <td>Read/Write/Notify Request</td>
+                        <td>⭐⭐⭐</td>
                     </tr>
                     <tr>
                         <td><strong>L2CAP</strong></td>
                         <td>信道复用与分段</td>
                         <td>LE Credit Based</td>
                         <td>connectChannel(), send()</td>
+                        <td>⭐⭐</td>
                     </tr>
                     <tr>
                         <td><strong>HCI</strong></td>
                         <td>主机控制器通信</td>
                         <td>HCI Command/Event</td>
                         <td>hci_send_cmd(), hci_read_evt()</td>
+                        <td>⭐⭐⭐</td>
                     </tr>
                     <tr>
                         <td><strong>Link Layer</strong></td>
                         <td>连接调度与状态机</td>
                         <td>固件实现</td>
                         <td>自动处理</td>
+                        <td>⭐</td>
                     </tr>
                     <tr>
                         <td><strong>PHY</strong></td>
                         <td>射频收发</td>
                         <td>固件实现</td>
                         <td>自动处理</td>
+                        <td>⭐</td>
                     </tr>
                 </tbody>
             </table>
