@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
 </head>
 <body>
@@ -46,72 +47,1048 @@
     <main class="main">
         <section class="section section-gray">
             <h2>安全机制</h2>
+            <p class="lead">经典蓝牙与 BLE 如何保证数据传输安全，包括配对、加密、认证机制详解。</p>
 
-            <h3>配对流程</h3>
-            <pre><code>// BLE 配对流程 (LE Secure Connections)
-// Phase 1: 能力交换 (Capability Exchange)
-// Phase 2: 公钥交换 (Public Key Exchange)
-// Phase 3: 认证 (Authentication)
-// Phase 4: 密钥分发 (Key Distribution)</code></pre>
+            <h3>🔐 经典蓝牙 vs BLE 安全对比</h3>
+            <div class="mermaid">
+flowchart TB
+    subgraph Classic["经典蓝牙安全"]
+        C1[PIN Code 配对]
+        C2[SAFER+ 加密]
+        C3[E0 流密码]
+        C4[8-16 位 PIN]
+    end
+    
+    subgraph BLE["BLE 安全"]
+        B1[LE Legacy<br/>AES-CCM]
+        B2[LE SC<br/>P-256 ECDH]
+        B3[6 位 OOB/Numeric]
+        B4[AES-128 加密]
+    end
+    
+    style Classic fill:#fff3cd,stroke:#ffc107
+    style BLE fill:#e3f2fd,stroke:#007bff
+            </div>
 
-            <h3>安全级别</h3>
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Mode</th>
-                        <th>Level</th>
-                        <th>加密</th>
-                        <th>认证</th>
-                        <th>场景</th>
+                        <th>特性</th>
+                        <th>经典蓝牙 (BR/EDR)</th>
+                        <th>BLE (低功耗)</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Mode 1</td>
-                        <td>Level 1</td>
-                        <td>无</td>
-                        <td>无</td>
-                        <td>Beacon</td>
+                        <td><strong>配对方式</strong></td>
+                        <td>PIN Code (8-16 位)</td>
+                        <td>Passkey (6 位)/OOB/Numeric</td>
                     </tr>
                     <tr>
-                        <td>Mode 1</td>
-                        <td>Level 3</td>
-                        <td>加密</td>
-                        <td>未认证</td>
-                        <td>经典配对</td>
+                        <td><strong>加密算法</strong></td>
+                        <td>E0 流密码 / SAFER+</td>
+                        <td>AES-128 CCM</td>
                     </tr>
                     <tr>
-                        <td>Mode 1</td>
-                        <td>Level 4</td>
-                        <td>加密</td>
-                        <td>MITM</td>
-                        <td>安全连接</td>
+                        <td><strong>密钥长度</strong></td>
+                        <td>8-16 bytes</td>
+                        <td>7-16 bytes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>密钥生成</strong></td>
+                        <td>基于 PIN + BD_ADDR</td>
+                        <td>ECDH 密钥交换</td>
+                    </tr>
+                    <tr>
+                        <td><strong>MITM 保护</strong></td>
+                        <td>可选</td>
+                        <td>LE SC 强制</td>
+                    </tr>
+                    <tr>
+                        <td><strong>安全版本</strong></td>
+                        <td>SSP (2.1+)</td>
+                        <td>LE SC (4.2+)</td>
                     </tr>
                 </tbody>
             </table>
 
-            <h3>加密算法</h3>
+            <h3>📡 经典蓝牙安全机制</h3>
+            
+            <h4>1. 配对流程 (Pairing)</h4>
+            <div class="mermaid">
+sequenceDiagram
+    participant A as 设备 A (手机/主机)
+    participant B as 设备 B (耳机/从机)
+    
+    Note over A,B: 场景 1: 固定 PIN 码 (最常见)
+    Note over B: 设备 B 有固定 PIN (如 0000)
+    A->>A: 用户输入 PIN (0000)
+    A->>A: 生成 Kinit = E(PIN, BD_ADDR_B)
+    B->>B: 使用固定 PIN 生成 Kinit
+    
+    Note over A,B: 场景 2: 设备 B 显示 PIN
+    Note over B: 设备 B 显示 PIN (如 123456)
+    A->>A: 用户输入显示的 PIN
+    A->>A: 生成 Kinit = E(PIN, BD_ADDR_B)
+    B->>B: 使用已知 PIN 生成 Kinit
+    
+    Note over A,B: 阶段 2: 链路密钥生成
+    A->>B: 随机数 AU_RAND_A
+    B->>A: 随机数 AU_RAND_B
+    
+    A->>A: 生成 Klink = E2(Kinit, AU_RAND_A, BD_ADDR_A)
+    B->>B: 生成 Klink = E2(Kinit, AU_RAND_B, BD_ADDR_B)
+    
+    Note over A,B: 阶段 3: 认证
+    A->>B: 认证请求 (AU_RAND_A)
+    B->>A: 认证响应 SRES = E1(Klink, AU_RAND_A, BD_ADDR_B)
+    A->>A: 验证 SRES
+    
+    Note over A,B: 阶段 4: 加密启用
+    A->>B: 加密请求
+    A->>A: 生成加密密钥 Kc = E3(Klink, COF_RAND, BD_ADDR)
+    B->>B: 生成加密密钥 Kc
+    
+    A->>B: 加密数据 (E0 流密码)
+            </div>
+            
+            <p><strong>常见 PIN 码场景：</strong></p>
+            <ul>
+                <li><strong>固定 PIN:</strong> 耳机/车载通常为 <code>0000</code> 或 <code>1234</code></li>
+                <li><strong>设备显示 PIN:</strong> 智能电视/游戏机显示 PIN，手机输入</li>
+                <li><strong>Just Works:</strong> 无输入 (SSP 2.1+)</li>
+            </ul>
+
+            <h4>2. 加密流程</h4>
+            <pre><code class="language-c">// 经典蓝牙加密密钥生成
+
+// 步骤 1: 生成初始化密钥 Kinit
+// 使用 SAFER+ 算法，基于 PIN 码和设备地址
+Kinit = SAFER+(PIN, BD_ADDR, 128)
+
+// 步骤 2: 生成链路密钥 Klink
+// 双方交换随机数，生成共享密钥
+Klink = E(Kinit, AU_RAND_A ⊕ AU_RAND_B)
+
+// 步骤 3: 生成加密密钥 Kc (8-16 bytes)
+Kc = E(Klink, COF_RAND, BD_ADDR)
+
+// 步骤 4: E0 流密码加密
+// 使用 Kc 初始化 E0 流密码生成器
+// 每时隙生成 1 bit 密钥流
+ciphertext = plaintext ⊕ keystream
+
+// E0 流密码特点:
+// - 基于 4 个 LFSR (线性反馈移位寄存器)
+// - 密钥长度可变 (8-16 bytes)
+// - 每时隙更新密钥流</code></pre>
+
+            <h4>3. 安全模式</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>模式</th>
+                        <th>说明</th>
+                        <th>安全级别</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Mode 1</strong></td>
+                        <td>非安全模式</td>
+                        <td>无安全</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mode 2</strong></td>
+                        <td>服务级安全</td>
+                        <td>按需加密</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mode 3</strong></td>
+                        <td>链路级安全</td>
+                        <td>强制加密</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SSP (2.1+)</strong></td>
+                        <td>安全简单配对</td>
+                        <td>Numeric/Passkey/OOB</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>📶 BLE 安全机制</h3>
+            
+            <h4>1. LE Legacy (BLE 4.0-4.1)</h4>
+            <div class="mermaid">
+sequenceDiagram
+    participant P as 外设 (Peripheral)
+    participant C as 中心 (Central)
+    
+    Note over P,C: Phase 1: 配对特性交换
+    P->>C: 配对请求 (IO 能力、认证要求)
+    C->>P: 配对响应
+    
+    Note over P,C: Phase 2: 临时密钥生成
+    P->>P: 生成 TK (Temporary Key)
+    C->>C: 生成 TK (Temporary Key)
+    
+    Note over P,C: 配对方式:
+    Note over P,C: Just Works: TK = 0
+    Note over P,C: Passkey: TK = 6 位数字
+    Note over P,C: OOB: TK = 带外数据
+    
+    Note over P,C: Phase 3: 短期密钥 STK 生成
+    P->>C: 随机数 Ra
+    C->>P: 随机数 Rb
+    
+    P->>P: STK = AES(TK, Ra ⊕ Rb)
+    C->>C: STK = AES(TK, Ra ⊕ Rb)
+    
+    Note over P,C: Phase 4: 长期密钥 LTK 分发
+    P->>C: 加密传输 LTK
+    C->>C: 存储 LTK 用于重连
+            </div>
+
+            <h4>2. LE Secure Connections (BLE 4.2+)</h4>
+            <div class="mermaid">
+sequenceDiagram
+    participant P as 外设 (Peripheral)
+    participant C as 中心 (Central)
+    
+    Note over P,C: Phase 1: 配对特性交换
+    P->>C: 配对请求 (LE SC 支持)
+    C->>P: 配对响应
+    
+    Note over P,C: Phase 2: 公钥交换 (ECDH P-256)
+    P->>P: 生成私钥 SKa, 公钥 PKa
+    C->>C: 生成私钥 SKb, 公钥 PKb
+    
+    P->>C: 发送公钥 PKa
+    C->>P: 发送公钥 PKb
+    
+    Note over P,C: Phase 3: DHKey 计算
+    P->>P: DHKey = ECDH(SKa, PKb)
+    C->>C: DHKey = ECDH(SKb, PKa)
+    
+    Note over P,C: Phase 4: 认证 (Numeric Comparison)
+    P->>P: 计算确认值 Va
+    C->>C: 计算确认值 Vb
+    
+    P->>P: 显示 6 位数字 (Va mod 1000000)
+    C->>C: 显示 6 位数字 (Vb mod 1000000)
+    
+    Note over P,C: 用户确认数字相同
+    
+    Note over P,C: Phase 5: 密钥生成
+    P->>P: LTK = f(DHKey, 随机数)
+    C->>C: LTK = f(DHKey, 随机数)
+    
+    Note over P,C: 加密连接建立
+            </div>
+
+            <h4>3. BLE 加密密钥层次</h4>
+            <pre><code class="language-c">// BLE 密钥层次结构
+
+// ========== LE Legacy (BLE 4.0-4.1) ==========
+// 1. TK (Temporary Key) - 临时密钥
+//    - Just Works: TK = 0
+//    - Passkey: TK = 6 位数字 (20 bits)
+//    - OOB: TK = 128 位带外数据
+
+// 2. STK (Short Term Key) - 短期密钥
+//    STK = AES128(TK, S1(Ra || Rb))
+//    - Ra, Rb: 双方生成的 128 位随机数
+//    - S1: 取低 64 位
+//    - 用于初始加密连接
+
+// 3. LTK (Long Term Key) - 长期密钥
+//    - 通过加密连接分发
+//    - 存储用于后续重连
+//    - 8-16 bytes
+
+// 4. IRK (Identity Resolving Key) - 身份解析密钥
+//    - 用于生成私有地址
+//    - 保护设备隐私
+
+// 5. CSRK (Connection Signature Resolving Key)
+//    - 用于数据签名
+
+// ========== LE Secure Connections (BLE 4.2+) ==========
+// 1. DHKey (Diffie-Hellman Key) - 256 位
+//    DHKey = ECDH_P256(SKa, PKb) = ECDH_P256(SKb, PKa)
+//    - SKa/SKb: 私钥
+//    - PKa/PKb: 公钥
+
+// 2. MacKey (128 位) - 用于认证
+//    MacKey = f(DHKey, N1 || N2, "btle")
+
+// 3. LTK (Long Term Key) - 128 位
+//    LTK = f(DHKey, N1 || N2, "btlk")
+//    - N1, N2: 双方随机数
+//    - f: AES-CMAC 函数
+
+// 4. IRK, CSRK (同上)</code></pre>
+
+            <h3>🔑 配对流程详解</h3>
+            
+            <h4>BLE 配对方式对比</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>配对方式</th>
+                        <th>IO 能力要求</th>
+                        <th>MITM 保护</th>
+                        <th>安全性</th>
+                        <th>典型场景</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Just Works</strong></td>
+                        <td>无显示/无输入</td>
+                        <td>❌ 无</td>
+                        <td>低</td>
+                        <td>手环、传感器</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Passkey Entry</strong></td>
+                        <td>键盘或显示</td>
+                        <td>✅ 有</td>
+                        <td>中</td>
+                        <td>键盘、电视</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Numeric Comparison</strong></td>
+                        <td>双方都有显示</td>
+                        <td>✅ 有</td>
+                        <td>高</td>
+                        <td>手机对手机</td>
+                    </tr>
+                    <tr>
+                        <td><strong>OOB (Out of Band)</strong></td>
+                        <td>NFC/其他通道</td>
+                        <td>✅ 有</td>
+                        <td>最高</td>
+                        <td>NFC 配对</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>配对代码示例</h4>
+            <pre><code class="language-c">// Nordic SDK - BLE 配对配置
+
+void ble_gap_sec_params_init(void) {
+    ble_gap_sec_params_t sec_params = {0};
+    
+    // 配对配置
+    sec_params.bond = 1;           // 允许绑定 (存储 LTK)
+    sec_params.mitm = 1;           // 需要 MITM 保护
+    sec_params.lesc = 1;           // 使用 LE Secure Connections
+    sec_params.keypress = 0;       // 不支持按键确认
+    sec_params.io_caps = BLE_GAP_IO_CAPS_DISPLAY_YESNO;  // 有显示，可确认
+    sec_params.oob = 0;            // 无 OOB 数据
+    sec_params.min_key_size = 16;  // 最小密钥长度 16 bytes
+    sec_params.max_key_size = 16;  // 最大密钥长度 16 bytes
+    
+    // 密钥分发配置
+    sec_params.kdist_own.enc = 1;  // 分发加密密钥 (LTK)
+    sec_params.kdist_own.id = 1;   // 分发身份密钥 (IRK)
+    sec_params.kdist_peer.enc = 1; // 接收对端加密密钥
+    sec_params.kdist_peer.id = 1;  // 接收对端身份密钥
+    
+    // 回复配对请求
+    sd_ble_gap_sec_params_reply(m_conn_handle,
+                                 BLE_GAP_SEC_STATUS_SUCCESS,
+                                 &sec_params,
+                                 NULL);
+}
+
+// 配对事件处理
+void on_ble_gap_evt_auth_status(ble_gap_evt_auth_status_t *p_auth_status) {
+    if (p_auth_status->auth_status == BLE_GAP_SEC_STATUS_SUCCESS) {
+        // 配对成功
+        // p_auth_status->bonded: 是否已绑定
+        // p_auth_status->enc_mode: 加密模式
+        // p_auth_status->key_size: 密钥长度 (7-16 bytes)
+        
+        // 存储 LTK 到 Flash
+        if (p_auth_status->bonded) {
+            store_ltk_to_flash(&p_auth_status->keys);
+        }
+    } else {
+        // 配对失败
+        // BLE_GAP_SEC_STATUS_PAIRING_NOT_SUPP: 不支持配对
+        // BLE_GAP_SEC_STATUS_PASSKEY_ENTRY_FAILED: 密码错误
+        // BLE_GAP_SEC_STATUS_OOB_NOT_AVAILABLE: OOB 数据不可用
+    }
+}</code></pre>
+
+            <h3>🛡️ 防止其他手机应用读取数据</h3>
+            <p class="lead">BLE 设备如何防止同一手机上的其他未授权应用读取数据。</p>
+
+            <h4>1. 连接级别保护 (加密绑定)</h4>
+            <div class="mermaid">
+sequenceDiagram
+    participant Device as BLE 设备
+    participant App1 as 授权 App
+    participant App2 as 其他 App
+    participant Phone as 手机系统
+    
+    Note over Device,App1: 阶段 1: 首次配对
+    App1->>Device: 配对请求
+    Device->>App1: 显示 6 位数字
+    App1->>App1: 用户确认数字
+    App1->>Device: 确认完成
+    Device->>App1: 加密连接建立
+    Device->>Device: 存储 App1 的 IRK/LTK
+    
+    Note over Device,App2: 阶段 2: 其他 App 尝试连接
+    App2->>Device: 扫描发现设备
+    App2->>Device: 连接请求
+    Device->>Device: 检查绑定列表
+    Device->>App2: ❌ 拒绝 (未绑定)
+    
+    Note over Device,Phone: 阶段 3: 系统级保护
+    Phone->>Phone: 每个 App 独立的蓝牙权限
+    Phone->>App2: ❌ 无权限访问已配对设备
+            </div>
+
+            <h4>2. GATT 权限控制</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>保护级别</th>
+                        <th>实现方式</th>
+                        <th>效果</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>加密访问</strong></td>
+                        <td>要求加密连接才能读取特征值</td>
+                        <td>未配对 App 无法读取</td>
+                    </tr>
+                    <tr>
+                        <td><strong>绑定检查</strong></td>
+                        <td>检查设备是否在绑定列表</td>
+                        <td>只有配对的手机可访问</td>
+                    </tr>
+                    <tr>
+                        <td><strong>权限分级</strong></td>
+                        <td>不同特征值不同安全级别</td>
+                        <td>敏感数据需要更高权限</td>
+                    </tr>
+                    <tr>
+                        <td><strong>应用认证</strong></td>
+                        <td>自定义应用层认证</td>
+                        <td>二次验证确保授权</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>3. 固件实现示例</h4>
+            <pre><code class="language-c">// Nordic SDK - GATT 权限控制
+
+// 配置特征值安全级别
+ble_gatts_char_md_t char_md = {0};
+ble_gatts_attr_md_t attr_md = {0};
+
+// 安全级别配置
+attr_md.vloc = BLE_GATTS_VLOC_STACK;  // 存储在协议栈
+attr_md.vlen = 1;                      // 可变长度
+
+// 读取权限：需要加密连接
+attr_md.read_perm.sm = 1;              // 安全模式 1
+attr_md.read_perm.lv = 4;              // 安全级别 4 (需要 MITM + 加密)
+
+// 写入权限：需要绑定
+attr_md.write_perm.sm = 1;
+attr_md.write_perm.lv = 4;
+
+// 应用特征值
+char_md.char_props.read = 1;
+char_md.char_props.write = 1;
+char_md.char_props.notify = 1;
+
+// 添加特征值
+sd_ble_gatts_characteristic_add(service_handle, 
+                                 &char_md, 
+                                 &attr, 
+                                 &char_handle);
+
+// 检查连接是否加密
+bool is_connection_encrypted(uint16_t conn_handle) {
+    ble_gap_conn_sec_t conn_sec;
+    sd_ble_gap_conn_sec_get(conn_handle, &conn_sec);
+    
+    // 检查加密模式
+    return (conn_sec.enc_mode.encryption > 0);
+}
+
+// 检查是否已绑定
+bool is_bonded(ble_gap_addr_t *p_addr) {
+    ble_gap_sec_params_t sec_params;
+    // 检查地址是否在绑定列表中
+    return check_bonding_list(p_addr);
+}
+
+// 拒绝未授权访问
+void on_gatt_read_request(ble_gatts_evt_read_t *p_evt) {
+    if (!is_connection_encrypted(p_evt->conn_handle)) {
+        // 连接未加密，拒绝访问
+        sd_ble_gatts_rw_authority_reply(p_evt->conn_handle,
+                                         BLE_GATTS_AUTHORIZE_TYPE_READ,
+                                         BLE_GAP_AUTHORIZATION_STATUS_REJECT);
+        return;
+    }
+    
+    if (!is_bonded(&p_evt->peer_addr)) {
+        // 设备未绑定，拒绝访问
+        sd_ble_gatts_rw_authority_reply(p_evt->conn_handle,
+                                         BLE_GATTS_AUTHORIZE_TYPE_READ,
+                                         BLE_GAP_AUTHORIZATION_STATUS_REJECT);
+        return;
+    }
+    
+    // 授权访问
+    sd_ble_gatts_rw_authority_reply(p_evt->conn_handle,
+                                     BLE_GATTS_AUTHORIZE_TYPE_READ,
+                                     BLE_GAP_AUTHORIZATION_STATUS_ACCEPT);
+}</code></pre>
+
+            <h4>4. 手机系统级保护</h4>
             <div class="grid">
                 <div class="card">
-                    <h3>LE Legacy</h3>
+                    <h3>Android</h3>
                     <ul>
-                        <li>加密：AES-CCM</li>
-                        <li>密钥：TK</li>
-                        <li>已淘汰</li>
+                        <li><strong>蓝牙权限:</strong> BLUETOOTH_CONNECT (Android 12+)</li>
+                        <li><strong>配对设备:</strong> 只有配对的 App 可访问</li>
+                        <li><strong>系统隔离:</strong> 每个 App 独立的连接句柄</li>
+                        <li><strong>位置权限:</strong> 扫描需要位置权限</li>
                     </ul>
                 </div>
                 <div class="card">
-                    <h3>LE Secure Connections</h3>
+                    <h3>iOS</h3>
                     <ul>
-                        <li>加密：AES-CCM</li>
-                        <li>密钥：P-256 ECDH</li>
-                        <li>强制配对</li>
+                        <li><strong>权限控制:</strong> NSBluetoothAlwaysUsageDescription</li>
+                        <li><strong>配对绑定:</strong> 系统管理配对信息</li>
+                        <li><strong>App 隔离:</strong> 每个 App 独立访问</li>
+                        <li><strong>后台限制:</strong> 后台蓝牙访问受限</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>最佳实践</h3>
+                    <ul>
+                        <li>启用 LE Secure Connections (MITM 保护)</li>
+                        <li>要求加密连接 (Security Level 4)</li>
+                        <li>启用绑定 (Bonding) 存储 LTK</li>
+                        <li>敏感特征值设置更高权限</li>
+                        <li>实现应用层认证 (可选)</li>
                     </ul>
                 </div>
             </div>
+
+            <h4>5. 安全级别配置建议</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>数据类型</th>
+                        <th>读取权限</th>
+                        <th>写入权限</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>公开数据 (设备名称)</td>
+                        <td>无要求</td>
+                        <td>N/A</td>
+                        <td>广播中可获取</td>
+                    </tr>
+                    <tr>
+                        <td>一般数据 (电量)</td>
+                        <td>加密</td>
+                        <td>加密</td>
+                        <td>需要配对</td>
+                    </tr>
+                    <tr>
+                        <td>敏感数据 (健康数据)</td>
+                        <td>加密 + MITM</td>
+                        <td>加密 + MITM</td>
+                        <td>需要确认配对</td>
+                    </tr>
+                    <tr>
+                        <td>控制命令 (固件升级)</td>
+                        <td>N/A</td>
+                        <td>加密 + 绑定 + 认证</td>
+                        <td>最高安全级别</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>📱 设备无显示屏的配对方案</h3>
+            <p class="lead">BLE 设备没有显示屏时，如何实现安全配对。</p>
+
+            <h4>方案对比</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>方案</th>
+                        <th>硬件要求</th>
+                        <th>安全性</th>
+                        <th>用户体验</th>
+                        <th>典型设备</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Just Works</strong></td>
+                        <td>无</td>
+                        <td>⚠️ 低 (无 MITM)</td>
+                        <td>✅ 最简单</td>
+                        <td>手环、传感器</td>
+                    </tr>
+                    <tr>
+                        <td><strong>固定 PIN</strong></td>
+                        <td>无</td>
+                        <td>⚠️ 中 (PIN 可能泄露)</td>
+                        <td>✅ 简单</td>
+                        <td>耳机、车载</td>
+                    </tr>
+                    <tr>
+                        <td><strong>包装印刷 PIN</strong></td>
+                        <td>无</td>
+                        <td>✅ 高 (唯一 PIN)</td>
+                        <td>✅ 简单</td>
+                        <td>智能锁、医疗设备</td>
+                    </tr>
+                    <tr>
+                        <td><strong>二维码/NFC</strong></td>
+                        <td>NFC 或二维码标签</td>
+                        <td>✅ 高 (OOB 认证)</td>
+                        <td>✅ 扫码即可</td>
+                        <td>智能家居</td>
+                    </tr>
+                    <tr>
+                        <td><strong>物理按钮确认</strong></td>
+                        <td>一个按钮</td>
+                        <td>✅ 高 (用户确认)</td>
+                        <td>⚠️ 需按按钮</td>
+                        <td>智能锁、开关</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>1. Just Works (最简单)</h4>
+            <div class="mermaid">
+sequenceDiagram
+    participant Device as BLE 设备 (无屏)
+    participant Phone as 手机 App
+    
+    Device->>Phone: 广播 (可配对)
+    Phone->>Device: 连接请求
+    Phone->>Device: 配对请求
+    Device->>Device: IO 能力 = NoInputNoOutput
+    Phone->>Phone: 自动确认 (Just Works)
+    Device->>Phone: 配对完成 (TK = 0)
+    Device->>Phone: 加密连接建立
+    
+    Note over Device,Phone: ⚠️ 无 MITM 保护，可能被中间人攻击
+            </div>
+            
+            <pre><code class="language-c">// Nordic SDK - Just Works 配置
+// 适用于无显示屏、无输入能力的设备
+
+void ble_gap_sec_params_init(void) {
+    ble_gap_sec_params_t sec_params = {0};
+    
+    sec_params.bond = 1;           // 允许绑定
+    sec_params.mitm = 0;           // ⚠️ 不需要 MITM 保护
+    sec_params.lesc = 1;           // 使用 LE Secure Connections
+    sec_params.io_caps = BLE_GAP_IO_CAPS_NONE;  // 无输入无输出
+    
+    // 密钥分发
+    sec_params.kdist_own.enc = 1;
+    sec_params.kdist_own.id = 1;
+    sec_params.kdist_peer.enc = 1;
+    sec_params.kdist_peer.id = 1;
+    
+    sd_ble_gap_sec_params_reply(m_conn_handle,
+                                 BLE_GAP_SEC_STATUS_SUCCESS,
+                                 &sec_params,
+                                 NULL);
+}</code></pre>
+
+            <h4>2. 固定 PIN 码 (设备出厂预设)</h4>
+            <div class="mermaid">
+sequenceDiagram
+    participant Device as BLE 设备
+    participant Phone as 手机 App
+    participant User as 用户
+    
+    Note over Device: 设备有固定 PIN
+    Note over Device: 如 0000 或 123456
+    
+    Phone->>Device: 连接请求
+    Phone->>User: 提示输入 PIN
+    User->>Phone: 输入 PIN (0000)
+    Phone->>Device: 配对请求 + PIN
+    Device->>Device: 验证 PIN (与预设比较)
+    Device->>Phone: ✅ 配对成功
+    
+    Note over Device,Phone: ⚠️ PIN 可能通过产品泄露
+            </div>
+            
+            <pre><code class="language-c">// 固定 PIN 码配置
+#define FIXED_PIN  "0000"  // 固定 PIN 码
+
+void ble_gap_sec_params_init(void) {
+    ble_gap_sec_params_t sec_params = {0};
+    
+    sec_params.bond = 1;
+    sec_params.mitm = 0;           // ⚠️ 固定 PIN 无 MITM 保护
+    sec_params.lesc = 0;           // 可使用 LE Legacy
+    sec_params.io_caps = BLE_GAP_IO_CAPS_NONE;
+    sec_params.oob = 0;
+    
+    // 设置固定 PIN
+    // 注意：LE Legacy 支持固定 PIN，LE SC 需要其他方案
+    
+    sec_params.kdist_own.enc = 1;
+    sec_params.kdist_peer.enc = 1;
+    
+    sd_ble_gap_sec_params_reply(m_conn_handle,
+                                 BLE_GAP_SEC_STATUS_SUCCESS,
+                                 &sec_params,
+                                 NULL);
+}</code></pre>
+
+            <h4>3. 包装印刷唯一 PIN (推荐)</h4>
+            <div class="mermaid">
+sequenceDiagram
+    participant Device as BLE 设备
+    participant Phone as 手机 App
+    participant User as 用户
+    participant Box as 产品包装
+    
+    Note over Box: 包装上印刷唯一 PIN
+    Note over Box: 如 "PIN: A1B2C3D4"
+    
+    User->>User: 查看包装上的 PIN
+    User->>Phone: 输入 PIN
+    Phone->>Device: 配对请求 + PIN
+    Device->>Device: 验证 PIN (与 Flash 中存储比较)
+    Device->>Phone: ✅ 配对成功
+    
+    Note over Device,Phone: ✅ 每个设备唯一 PIN，更安全
+            </div>
+            
+            <pre><code class="language-c">// 包装印刷唯一 PIN 实现
+
+// 每个设备烧录唯一 PIN (生产时写入 Flash)
+#define PIN_LENGTH  8
+static const uint8_t device_pin[PIN_LENGTH] = {
+    0xA1, 0xB2, 0xC3, 0xD4,  // 唯一 PIN 码
+    0xE5, 0xF6, 0x07, 0x18
+};
+
+// 将 PIN 转换为 6 位数字用于配对
+uint32_t get_passkey(void) {
+    // 使用 PIN 的哈希值生成 6 位数字
+    uint32_t hash = crc32(device_pin, PIN_LENGTH);
+    return hash % 1000000;  // 6 位数字 (000000-999999)
+}
+
+void ble_gap_sec_params_init(void) {
+    ble_gap_sec_params_t sec_params = {0};
+    
+    sec_params.bond = 1;
+    sec_params.mitm = 1;           // ✅ 需要 MITM 保护
+    sec_params.lesc = 1;           // 使用 LE Secure Connections
+    sec_params.io_caps = BLE_GAP_IO_CAPS_NONE;
+    sec_params.oob = 0;
+    
+    // 设置 OOB 数据 (使用唯一 PIN)
+    sec_params.oob = 1;
+    memcpy(sec_params.oob_data, device_pin, PIN_LENGTH);
+    
+    sec_params.kdist_own.enc = 1;
+    sec_params.kdist_peer.enc = 1;
+    
+    sd_ble_gap_sec_params_reply(m_conn_handle,
+                                 BLE_GAP_SEC_STATUS_SUCCESS,
+                                 &sec_params,
+                                 NULL);
+}</code></pre>
+
+            <h4>4. 二维码/NFC (OOB 带外配对)</h4>
+            <div class="mermaid">
+sequenceDiagram
+    participant Device as BLE 设备
+    participant Phone as 手机 App
+    participant User as 用户
+    participant QR as 二维码/NFC
+    
+    Note over QR: 二维码包含:
+    Note over QR: - 设备地址
+    Note over QR: - OOB 数据
+    
+    User->>Phone: 扫描二维码
+    Phone->>Phone: 解析 OOB 数据
+    Phone->>Device: 连接请求
+    Phone->>Device: 配对请求 + OOB 数据
+    Device->>Device: 验证 OOB 数据
+    Device->>Phone: ✅ 配对成功
+    
+    Note over Device,Phone: ✅ 最高安全性，MITM 保护
+            </div>
+            
+            <pre><code class="language-c">// 二维码/NFC OOB 配对实现
+
+// 生成二维码数据
+// 格式：BLE:AA:BB:CC:DD:EE:FF:TK:12345678901234567890
+void generate_qr_code(uint8_t *qr_data, size_t *len) {
+    ble_gap_addr_t addr;
+    sd_ble_gap_addr_get(&addr);
+    
+    // 获取 OOB 数据 (128 位 TK)
+    uint8_t oob_tk[16];
+    sd_rand_application_vector_get(oob_tk, 16);
+    
+    // 生成二维码字符串
+    *len = sprintf((char*)qr_data, 
+                   "BLE:%02X:%02X:%02X:%02X:%02X:%02X:TK:%032X",
+                   addr.addr[5], addr.addr[4], addr.addr[3],
+                   addr.addr[2], addr.addr[1], addr.addr[0],
+                   oob_tk);
+}
+
+// OOB 配对配置
+void ble_gap_sec_params_init(void) {
+    ble_gap_sec_params_t sec_params = {0};
+    ble_gap_lesc_oob_data_t oob_data;
+    
+    sec_params.bond = 1;
+    sec_params.mitm = 1;           // ✅ MITM 保护
+    sec_params.lesc = 1;           // LE Secure Connections
+    sec_params.io_caps = BLE_GAP_IO_CAPS_NONE;
+    sec_params.oob = 1;            // ✅ 启用 OOB
+    
+    // 生成 OOB 数据
+    sd_ble_gap_lesc_oob_data_generate(&oob_data);
+    
+    // 设置 OOB 数据
+    sec_params.kdist_own.enc = 1;
+    sec_params.kdist_peer.enc = 1;
+    
+    sd_ble_gap_sec_params_reply(m_conn_handle,
+                                 BLE_GAP_SEC_STATUS_SUCCESS,
+                                 &sec_params,
+                                 &oob_data);
+}</code></pre>
+
+            <h4>5. 物理按钮确认 (推荐用于智能锁等)</h4>
+            <div class="mermaid">
+sequenceDiagram
+    participant Device as BLE 设备 (有按钮)
+    participant Phone as 手机 App
+    participant User as 用户
+    
+    User->>Device: 长按按钮 3 秒
+    Device->>Device: 进入配对模式
+    Device->>Phone: 广播 (可配对)
+    Phone->>Device: 连接请求
+    Phone->>Device: 配对请求
+    
+    Note over Device: 按钮灯闪烁
+    User->>Device: 短按按钮确认
+    Device->>Phone: ✅ 配对成功
+    
+    Note over Device,Phone: ✅ 用户物理确认，MITM 保护
+            </div>
+            
+            <pre><code class="language-c">// 物理按钮确认实现
+
+#define BUTTON_PIN    17
+#define LONG_PRESS_MS 3000  // 长按 3 秒进入配对
+
+void button_handler(uint8_t pin_no, uint8_t button_action) {
+    static uint32_t press_start = 0;
+    
+    if (button_action == BUTTON_PUSH) {
+        press_start = app_timer_cnt_get();
+    } else if (button_action == BUTTON_RELEASE) {
+        uint32_t press_duration = app_timer_cnt_get() - press_start;
+        
+        if (press_duration >= LONG_PRESS_MS) {
+            // 长按 3 秒，进入配对模式
+            enter_pairing_mode();
+        } else {
+            // 短按，确认配对
+            confirm_pairing();
+        }
+    }
+}
+
+void enter_pairing_mode(void) {
+    ble_gap_adv_params_t adv_params = {0};
+    adv_params.properties.type = BLE_GAP_ADV_TYPE_CONNECTABLE_SCANNABLE_UNDIRECTED;
+    adv_params.interval.min = 160;  // 100ms
+    adv_params.interval.max = 160;
+    
+    // 按钮灯闪烁提示
+    led_blink(3);
+    
+    sd_ble_gap_adv_start(&adv_params, APP_BLE_CONN_CFG_TAG);
+}
+
+void confirm_pairing(void) {
+    // 按钮短按确认配对
+    sd_ble_gap_auth_key_reply(m_conn_handle, 
+                               BLE_GAP_AUTH_KEY_TYPE_NONE, 
+                               NULL);
+    
+    // 按钮灯常亮提示
+    led_on();
+}</code></pre>
+
+            <h4>方案选择建议</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>设备类型</th>
+                        <th>推荐方案</th>
+                        <th>理由</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>手环/传感器</td>
+                        <td>Just Works</td>
+                        <td>成本最低，用户体验好</td>
+                    </tr>
+                    <tr>
+                        <td>智能锁</td>
+                        <td>物理按钮 + 唯一 PIN</td>
+                        <td>高安全性，用户确认</td>
+                    </tr>
+                    <tr>
+                        <td>医疗设备</td>
+                        <td>包装印刷唯一 PIN</td>
+                        <td>唯一性，可追溯</td>
+                    </tr>
+                    <tr>
+                        <td>智能家居</td>
+                        <td>二维码/NFC</td>
+                        <td>扫码即可，体验好</td>
+                    </tr>
+                    <tr>
+                        <td>耳机/音箱</td>
+                        <td>固定 PIN (0000)</td>
+                        <td>行业惯例，简单</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>🛡️ 安全最佳实践</h3>
+            
+            <div class="grid">
+                <div class="card">
+                    <h3>经典蓝牙</h3>
+                    <ul>
+                        <li>使用 SSP (2.1+), 避免旧 PIN 配对</li>
+                        <li>启用 Mode 3 (链路级加密)</li>
+                        <li>使用 16 位 PIN 码</li>
+                        <li>定期更新密钥</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>BLE (推荐配置)</h3>
+                    <ul>
+                        <li>启用 LE Secure Connections (4.2+)</li>
+                        <li>设置 mitm = 1 (MITM 保护)</li>
+                        <li>使用 Numeric Comparison 或 OOB</li>
+                        <li>密钥长度 16 bytes</li>
+                        <li>启用绑定 (Bonding) 存储 LTK</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>避免的安全问题</h3>
+                    <ul>
+                        <li>❌ Just Works (无 MITM 保护)</li>
+                        <li>❌ 密钥长度 < 16 bytes</li>
+                        <li>❌ 不验证配对状态</li>
+                        <li>❌ 明文传输敏感数据</li>
+                        <li>❌ 使用 LE Legacy (4.0-4.1)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>📊 安全级别对比</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>蓝牙版本</th>
+                        <th>配对方式</th>
+                        <th>加密算法</th>
+                        <th>MITM 保护</th>
+                        <th>推荐度</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>经典 2.0-</strong></td>
+                        <td>PIN Code</td>
+                        <td>E0 / SAFER+</td>
+                        <td>可选</td>
+                        <td>❌ 不推荐</td>
+                    </tr>
+                    <tr>
+                        <td><strong>经典 2.1+ (SSP)</strong></td>
+                        <td>Numeric/Passkey</td>
+                        <td>E0 / AES</td>
+                        <td>✅ 支持</td>
+                        <td>⚠️ 可用</td>
+                    </tr>
+                    <tr>
+                        <td><strong>BLE 4.0-4.1</strong></td>
+                        <td>LE Legacy</td>
+                        <td>AES-CCM</td>
+                        <td>⚠️ 部分</td>
+                        <td>⚠️ 可用</td>
+                    </tr>
+                    <tr>
+                        <td><strong>BLE 4.2+ (LE SC)</strong></td>
+                        <td>ECDH P-256</td>
+                        <td>AES-CCM</td>
+                        <td>✅ 强制</td>
+                        <td>✅ 推荐</td>
+                    </tr>
+                    <tr>
+                        <td><strong>BLE 5.2+ (LE Audio)</strong></td>
+                        <td>LE SC + LC3</td>
+                        <td>AES-CCM</td>
+                        <td>✅ 强制</td>
+                        <td>✅ 最佳</td>
+                    </tr>
+                </tbody>
+            </table>
         </section>
     </main>
 
     <script src="../js/script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            sequence: {
+                actorMargin: 50,
+                boxMargin: 10,
+                messageMargin: 40,
+                showSequenceNumbers: true
+            }
+        });
+    </script>
 </body>
 </html>
